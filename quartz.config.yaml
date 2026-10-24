@@ -100,6 +100,18 @@ plugins:
     order: 92
   - source: "@quartz-community/quartz-fonts"
     enabled: true
+    options:
+      fontOrigin: googleFonts
+      body:
+        name: Be Vietnam Pro
+        weights: [400, 500, 600, 700]
+        includeItalic: true
+      header:
+        name: Be Vietnam Pro
+        weights: [600, 700, 800]
+      code:
+        name: JetBrains Mono
+        weights: [400, 600]
   - source: "@quartz-themes/core"
     enabled: false
     options:
