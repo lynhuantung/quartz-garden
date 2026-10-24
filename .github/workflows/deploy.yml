@@ -1,0 +1,70 @@
+name: Deploy garden to GitHub Pages
+
+on:
+  push:
+    branches: [v5]
+  workflow_dispatch:
+  repository_dispatch:
+    types: [vault-updated]
+  schedule:
+    - cron: "17 * * * *" # mỗi giờ, phòng khi không gọi được từ repo vault
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout vault
+        uses: actions/checkout@v4
+        with:
+          repository: lynhuantung/obs-Personal
+          # Vault public thì không cần secret; nếu chuyển private, tạo secret VAULT_TOKEN (Contents: read)
+          token: ${{ secrets.VAULT_TOKEN || github.token }}
+          path: vault
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            .quartz/plugins
+          key: quartz-${{ hashFiles('package-lock.json', 'quartz.config.yaml') }}
+
+      - run: npm ci
+
+      - name: Lọc note dg-publish từ vault
+        run: node scripts/sync-vault.mjs
+        env:
+          VAULT_DIR: vault
+
+      - run: npx quartz plugin install
+      - run: npx quartz build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
