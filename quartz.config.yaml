@@ -151,13 +151,13 @@ plugins:
     enabled: true
     options:
       localGraph:
-        depth: 2
+        depth: 1
         showTags: false
-        fontSize: 0.7
+        fontSize: 0.65
         opacityScale: 12
-        repelForce: 0.8
+        repelForce: 1.1
         centerForce: 0.3
-        linkDistance: 50
+        linkDistance: 55
         scale: 1
       globalGraph:
         depth: -1

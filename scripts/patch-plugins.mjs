@@ -40,6 +40,29 @@ const patches = [
         from: '.on("zoom",ut);',
         to: '.on("zoom",ut);ut({transform:o.zoomIdentity});',
       },
+      {
+        // Cấp liên kết của đồ thị cục bộ do người dùng chọn (lưu ở localStorage "graphDepth").
+        // Đồ thị toàn cục (depth < 0) giữ nguyên.
+        from: "$u=S.depth,",
+        to: '$u=S.depth<0?S.depth:((function(){try{return parseInt(localStorage.getItem("graphDepth"))}catch(e){}})()||S.depth),',
+      },
+      {
+        // Cắt nhãn quá dài (ví dụ "Building a Second Brain - Thiết lập bộ não thứ hai") để không chồng chữ.
+        from: "text:iu.text,style:{fontSize:We*15",
+        to: 'text:iu.text.length>22?iu.text.slice(0,21)+"…":iu.text,style:{fontSize:We*15',
+      },
+      {
+        // Nút chọn "Cấp 1 · 2 · 3" ngay dưới tiêu đề đồ thị cục bộ; chọn xong tải lại trang để vẽ lại.
+        from: ".on(\"zoom\",ut);ut({transform:o.zoomIdentity});",
+        to:
+          '.on("zoom",ut);ut({transform:o.zoomIdentity});' +
+          '(function(){if(S.depth<0)return;var w=_.closest(".graph");if(!w||w.querySelector(".graph-depth"))return;' +
+          'var d=document.createElement("div");d.className="graph-depth";d.setAttribute("role","group");' +
+          'd.setAttribute("aria-label","Cấp liên kết");' +
+          'd.innerHTML="<span>Cấp</span>"+[1,2,3].map(function(n){return \'<button type="button" data-d="\'+n+\'"\'+(n===$u?\' class="on"\':"")+">"+n+"</button>"}).join("");' +
+          'd.addEventListener("click",function(e){var n=e.target&&e.target.dataset&&e.target.dataset.d;if(!n)return;' +
+          'try{localStorage.setItem("graphDepth",n)}catch(x){}location.reload()});w.appendChild(d)})();',
+      },
     ],
   },
   {
