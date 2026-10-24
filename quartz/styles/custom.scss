@@ -1,3 +1,134 @@
 @use "./variables.scss" as *;
 
-// put your custom CSS here!
+// Giao diện hiện đại, dễ đọc cho digital garden tiếng Việt
+
+body {
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+// --- Nội dung bài ---
+article {
+  line-height: 1.85;
+  letter-spacing: 0.005em;
+
+  & > h1,
+  & h1,
+  & h2,
+  & h3,
+  & h4 {
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+  & h1 { font-size: 2rem; margin-top: 2.2rem; }
+  & h2 { font-size: 1.55rem; margin-top: 2.4rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--lightgray); }
+  & h3 { font-size: 1.25rem; margin-top: 1.8rem; }
+
+  & p,
+  & ul,
+  & ol {
+    margin-block: 1.05rem;
+  }
+  & li { margin-block: 0.35rem; }
+
+  & a {
+    font-weight: 500;
+    text-decoration: none;
+    border-bottom: 1.5px solid color-mix(in srgb, var(--secondary) 35%, transparent);
+    transition: border-color 0.15s ease, color 0.15s ease;
+    &:hover { border-bottom-color: var(--secondary); }
+  }
+
+  & blockquote {
+    border-left: 4px solid var(--secondary);
+    background: var(--highlight);
+    border-radius: 0 10px 10px 0;
+    padding: 0.4rem 1.1rem;
+    margin: 1.4rem 0;
+  }
+
+  & img {
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  & code:not(pre code) {
+    background: var(--highlight);
+    border-radius: 6px;
+    padding: 0.12em 0.4em;
+    font-size: 0.88em;
+  }
+  & pre {
+    border-radius: 12px;
+    border: 1px solid var(--lightgray);
+  }
+  & table { border-radius: 10px; overflow: hidden; }
+  & hr { border-color: var(--lightgray); margin: 2.4rem 0; }
+}
+
+// --- Thanh bên ---
+.left,
+.right {
+  & > * { margin-bottom: 1.4rem; }
+}
+.page-title a,
+.page-title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.graph-outer {
+  border-radius: 14px;
+  border: 1px solid var(--lightgray);
+  background: color-mix(in srgb, var(--highlight) 40%, var(--light));
+  overflow: hidden;
+}
+
+// --- Chi tiết nhỏ ---
+::selection { background: var(--textHighlight); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--lightgray); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gray); }
+
+.breadcrumb-container,
+.content-meta { color: var(--gray); font-size: 0.85rem; }
+footer { margin-top: 3rem; opacity: 0.8; }
+
+// --- Vòng 2: Explorer dịu mắt, mục lục không bị cắt ---
+.explorer-content .folder-container div > a,
+.explorer-content .folder-container div > button span {
+  color: var(--dark) !important;
+  font-weight: 600;
+}
+.explorer-content .folder-icon { color: var(--gray) !important; }
+.explorer-content ul li > a.active {
+  color: var(--secondary) !important;
+  font-weight: 600;
+}
+
+.right .toc {
+  flex: 0 0 auto;
+  max-height: 42vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.right .toc .depth-1 { padding-left: 0.8rem; }
+.right .toc .depth-2 { padding-left: 1.6rem; }
+.right .toc a { font-size: 0.9rem; line-height: 1.5; }
+.right .backlinks {
+  flex: 0 0 auto;
+  max-height: 28vh;
+  overflow-y: auto;
+}
+
+// --- Vòng 3: chi tiết tương tác ---
+.explorer-content ul li > a {
+  border-radius: 6px;
+  padding: 0.1rem 0.4rem;
+  margin-left: -0.4rem;
+  transition: background 0.15s ease;
+  &:hover { background: var(--highlight); }
+}
+.graph-outer { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
+article a.internal { border-radius: 6px; }
