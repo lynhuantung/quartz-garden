@@ -97,3 +97,27 @@ for (const rel of neededAssets) {
 
 if (!home) console.warn("Cảnh báo: không có note nào có dg-home: true, site sẽ thiếu trang chủ.")
 console.log(`Đã chép ${notes} note, ${neededAssets.size} tệp đính kèm. Trang chủ: ${home ?? "(chưa có)"}`)
+
+// --- Trang chủ dạng thẻ chủ đề (kiểu Obsidian Help). Tắt bằng HOME_VARIANT=none ---
+if ((process.env.HOME_VARIANT ?? "cards") !== "none") {
+  const counts = new Map()
+  for (const f of walk(outDir)) {
+    if (!f.endsWith(".md") || f === "index.md") continue
+    const parts = f.split("/")
+    if (parts.length > 1) counts.set(parts[0], (counts.get(parts[0]) ?? 0) + 1)
+  }
+  const topics = [...counts.entries()]
+    .sort((x, y) => y[1] - x[1])
+    .map(([name, n]) => ({ name, n, href: `./${name.toLowerCase().replace(/\s+/g, "-")}/` }))
+  const card = (t) =>
+    `<a class="card" href="${t.href}"><span class="name">${t.name}</span><span class="desc">${t.n} ghi chú</span></a>`
+  const html = `<div class="home-cards"><p>Khu vườn ghi chú cá nhân: ${notes} ghi chú, ${topics.length} chủ đề, nối với nhau bằng liên kết. Chọn một chủ đề bên dưới, nhấn <kbd>Ctrl</kbd> + <kbd>K</kbd> để tìm kiếm, hoặc xem toàn bộ mạng lưới ở sơ đồ bên phải.</p><h2>Chủ đề</h2><div class="cards">${topics.map(card).join("")}</div></div>`
+  const idx = path.join(outDir, "index.md")
+  const old = fs.readFileSync(idx, "utf8")
+  // index.md luôn có frontmatter dạng ---<khối>---<nội dung> do đoạn trên tạo ra
+  const parts = old.split("---")
+  const fmLines = (parts[1] ?? "").split(/\r?\n/).filter((l) => !/^title:/i.test(l) && l.trim())
+  fmLines.unshift(`title: ${process.env.HOME_TITLE ?? "Digital Garden"}`)
+  fs.writeFileSync(idx, ["---", ...fmLines, "---", "", html, ""].join(String.fromCharCode(10)))
+  console.log(`Trang chủ dạng thẻ: ${topics.length} chủ đề`)
+}

@@ -16,29 +16,29 @@ configuration:
     fontOrigin: googleFonts
     cdnCaching: true
     typography:
-      header: Be Vietnam Pro
-      body: Be Vietnam Pro
+      header: Inter
+      body: Inter
       code: JetBrains Mono
     colors:
       lightMode:
         light: "#ffffff"
-        lightgray: "#e7e9ee"
-        gray: "#9aa1ad"
-        darkgray: "#3d4451"
-        dark: "#15181e"
-        secondary: "#4f46e5"
-        tertiary: "#0891b2"
-        highlight: rgba(79, 70, 229, 0.08)
+        lightgray: "#e0e0e0"
+        gray: "#8a8a8a"
+        darkgray: "#555555"
+        dark: "#222222"
+        secondary: "#8a5cf5"
+        tertiary: "#6d3fe0"
+        highlight: rgba(138, 92, 245, 0.08)
         textHighlight: "#fde04788"
       darkMode:
-        light: "#101319"
-        lightgray: "#262b35"
-        gray: "#6b7482"
-        darkgray: "#cfd5df"
-        dark: "#f3f5f9"
-        secondary: "#a5b4fc"
-        tertiary: "#67e8f9"
-        highlight: rgba(165, 180, 252, 0.12)
+        light: "#1e1e1e"
+        lightgray: "#363636"
+        gray: "#8a8a8a"
+        darkgray: "#c9c9c9"
+        dark: "#dadada"
+        secondary: "#a78bfa"
+        tertiary: "#c4b5fd"
+        highlight: rgba(167, 139, 250, 0.14)
         textHighlight: "#facc1555"
 plugins:
   - source: "@quartz-community/created-modified-date"
@@ -103,11 +103,11 @@ plugins:
     options:
       fontOrigin: googleFonts
       body:
-        name: Be Vietnam Pro
+        name: Inter
         weights: [400, 500, 600, 700]
         includeItalic: true
       header:
-        name: Be Vietnam Pro
+        name: Inter
         weights: [600, 700, 800]
       code:
         name: JetBrains Mono
@@ -151,13 +151,13 @@ plugins:
     enabled: true
     options:
       localGraph:
-        depth: 1
+        depth: 2
         showTags: false
-        fontSize: 1
+        fontSize: 0.7
         opacityScale: 12
-        repelForce: 1.2
-        centerForce: 0.2
-        linkDistance: 170
+        repelForce: 0.8
+        centerForce: 0.3
+        linkDistance: 50
         scale: 1
       globalGraph:
         depth: -1
@@ -171,8 +171,8 @@ plugins:
         focusOnHover: true
         enableRadial: false
     layout:
-      position: afterBody
-      priority: 5
+      position: right
+      priority: 10
   - source: "@quartz-community/search"
     enabled: true
     layout:
