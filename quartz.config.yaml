@@ -153,11 +153,12 @@ plugins:
       localGraph:
         depth: 1
         showTags: false
-        fontSize: 0.75
-        opacityScale: 1.6
-        repelForce: 0.5
-        linkDistance: 30
-        scale: 1.5
+        fontSize: 1
+        opacityScale: 12
+        repelForce: 1.2
+        centerForce: 0.2
+        linkDistance: 170
+        scale: 1
       globalGraph:
         depth: -1
         showTags: false
@@ -166,12 +167,12 @@ plugins:
         repelForce: 0.4
         centerForce: 0.9
         linkDistance: 40
-        scale: 0.42
+        scale: 1
         focusOnHover: true
         enableRadial: false
     layout:
-      position: right
-      priority: 10
+      position: afterBody
+      priority: 5
   - source: "@quartz-community/search"
     enabled: true
     layout:

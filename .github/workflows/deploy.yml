@@ -54,6 +54,7 @@ jobs:
           VAULT_DIR: vault/obs-Personal
 
       - run: npx quartz plugin install
+      - run: node scripts/patch-graph.mjs
       - run: npx quartz build
 
       - uses: actions/upload-pages-artifact@v3

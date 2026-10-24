@@ -132,3 +132,10 @@ footer { margin-top: 3rem; opacity: 0.8; }
 }
 .graph-outer { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
 article a.internal { border-radius: 6px; }
+
+// --- Local graph lớn dưới bài viết ---
+.center .graph > .graph-outer {
+  height: 520px !important;
+  margin-top: 0.8rem;
+}
+.center .graph > h3 { margin-top: 2.4rem; }
