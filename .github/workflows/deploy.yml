@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: lynhuantung/obs-Personal
+          ref: obs-Personal
           # Vault public thì không cần secret; nếu chuyển private, tạo secret VAULT_TOKEN (Contents: read)
           token: ${{ secrets.VAULT_TOKEN || github.token }}
           path: vault
