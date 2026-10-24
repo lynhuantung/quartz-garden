@@ -51,7 +51,7 @@ jobs:
       - name: Lọc note dg-publish từ vault
         run: node scripts/sync-vault.mjs
         env:
-          VAULT_DIR: vault
+          VAULT_DIR: vault/obs-Personal
 
       - run: npx quartz plugin install
       - run: npx quartz build
