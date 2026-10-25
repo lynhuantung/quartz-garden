@@ -208,7 +208,7 @@ article {
     margin-top: 1rem;
     @media all and ($mobile) { grid-template-columns: 1fr; }
   }
-  a.card {
+  a.card, div.card {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
@@ -218,7 +218,7 @@ article {
     text-decoration: none;
     color: var(--dark);
     transition: border-color 0.15s ease, background 0.15s ease;
-    &:hover { border-color: var(--secondary); background: var(--highlight); }
+    &:is(a):hover { border-color: var(--secondary); background: var(--highlight); }
     .name { font-weight: 600; font-size: 1.05rem; }
     .desc { color: var(--gray); font-size: 0.92rem; }
   }

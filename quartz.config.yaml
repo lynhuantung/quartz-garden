@@ -278,9 +278,9 @@ plugins:
   - source: "@quartz-community/encrypted-pages"
     enabled: true
     options:
-      iterations: 600000
+      iterations: 200000
       passwordField: password
-      unlistWhenEncrypted: false
+      unlistWhenEncrypted: true
       outputPath: static/encryptedContentIndex.json
     order: 900
   - source: "@quartz-community/stacked-pages"

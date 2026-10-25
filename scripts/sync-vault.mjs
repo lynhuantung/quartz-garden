@@ -9,6 +9,12 @@ const vault = process.env.VAULT_DIR
 const outDir = path.join(root, "content")
 // Bỏ tiền tố thư mục này khỏi đường dẫn đầu ra (giữ URL gọn). Để trống nếu không muốn bỏ.
 const stripPrefix = process.env.STRIP_PREFIX ?? "Publish/"
+// Mật khẩu chung cho cả site (tùy chọn). Để trống hoặc không đặt thì site công khai như cũ.
+const sitePassword = process.env.SITE_PASSWORD || ""
+if (/---|[\r\n]/.test(sitePassword)) {
+  console.error("SITE_PASSWORD không được chứa '---' hoặc xuống dòng (sẽ làm hỏng frontmatter).")
+  process.exit(1)
+}
 
 if (!vault || !fs.existsSync(vault)) {
   console.error("Thiếu hoặc sai VAULT_DIR:", vault)
@@ -71,6 +77,11 @@ for (const rel of all.filter((f) => f.endsWith(".md"))) {
     // File đổi tên thành index.md nên cần đặt tiêu đề rõ ràng
     if (!/^title:/im.test(fmOut)) fmOut = `title: ${process.env.HOME_TITLE ?? "Trang chủ"}\n${fmOut}`.trim()
   }
+  // Chế độ mật khẩu cả site: chèn `password` vào mọi note (trừ note đã có mật khẩu riêng).
+  // Quartz (plugin encrypted-pages) mã hóa trang lúc build. Mật khẩu chỉ nằm trong biến môi trường.
+  if (sitePassword && !/^password:/im.test(fmOut)) {
+    fmOut = `${fmOut}${fmOut ? "\n" : ""}password: ${JSON.stringify(sitePassword)}`
+  }
   const content = (fmOut ? `---\n${fmOut}\n---\n` : "") + body
   const dest = path.join(outDir, target)
   fs.mkdirSync(path.dirname(dest), { recursive: true })
@@ -97,6 +108,7 @@ for (const rel of neededAssets) {
 
 if (!home) console.warn("Cảnh báo: không có note nào có dg-home: true, site sẽ thiếu trang chủ.")
 console.log(`Đã chép ${notes} note, ${neededAssets.size} tệp đính kèm. Trang chủ: ${home ?? "(chưa có)"}`)
+console.log(sitePassword ? "Chế độ mật khẩu cả site: BẬT (mọi note sẽ bị mã hóa lúc build)" : "Chế độ mật khẩu cả site: tắt")
 
 // --- Trang chủ dạng thẻ chủ đề (kiểu Obsidian Help). Tắt bằng HOME_VARIANT=none ---
 if ((process.env.HOME_VARIANT ?? "cards") !== "none") {
@@ -109,8 +121,11 @@ if ((process.env.HOME_VARIANT ?? "cards") !== "none") {
   const topics = [...counts.entries()]
     .sort((x, y) => y[1] - x[1])
     .map(([name, n]) => ({ name, n, href: `./${name.toLowerCase().replace(/\s+/g, "-")}/` }))
+  // Chế độ mật khẩu: trang thư mục không được tạo ra (mọi trang bị ẩn khỏi danh sách) nên thẻ chỉ để xem, không là link.
   const card = (t) =>
-    `<a class="card" href="${t.href}"><span class="name">${t.name}</span><span class="desc">${t.n} ghi chú</span></a>`
+    sitePassword
+      ? `<div class="card"><span class="name">${t.name}</span><span class="desc">${t.n} ghi chú</span></div>`
+      : `<a class="card" href="${t.href}"><span class="name">${t.name}</span><span class="desc">${t.n} ghi chú</span></a>`
   const html = `<div class="home-cards"><p>Khu vườn ghi chú cá nhân: ${notes} ghi chú, ${topics.length} chủ đề, nối với nhau bằng liên kết. Chọn một chủ đề bên dưới, nhấn <kbd>Ctrl</kbd> + <kbd>K</kbd> để tìm kiếm, hoặc xem toàn bộ mạng lưới ở sơ đồ bên phải.</p><h2>Chủ đề</h2><div class="cards">${topics.map(card).join("")}</div></div>`
   const idx = path.join(outDir, "index.md")
   const old = fs.readFileSync(idx, "utf8")

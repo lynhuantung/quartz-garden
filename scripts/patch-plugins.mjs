@@ -88,6 +88,12 @@ const patches = [
       { from: "c.toLowerCase().startsWith(p.toLowerCase())", to: "X(c).startsWith(X(p))" },
       { from: "l.toLowerCase().includes(f.toLowerCase())", to: "X(l).includes(X(f))" },
       { from: "h=l.replace(a,c=>", to: 'h=l.replace(new RegExp(M(a.source),"gi"),c=>' },
+      {
+        // Lỗi của plugin với trang mã hóa: script giải mã đã chèn sẵn mục vào chính đối tượng Z nên
+        // `if(Z[r])continue` bỏ qua tất cả, tìm kiếm không bao giờ lập chỉ mục chúng. Kiểm tra theo danh sách đã lập chỉ mục.
+        from: "if(Z[r])continue;let i=t[r];",
+        to: "if(Ht.includes(r))continue;let i=t[r];",
+      },
     ],
   },
 ]
