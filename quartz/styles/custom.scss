@@ -21,8 +21,47 @@ body {
   .center { padding-left: 2.8rem; padding-right: 1rem; }
 }
 @media (max-width: 800px) {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  #quartz-root,
+  #quartz-body,
+  .center,
+  .left.sidebar,
+  .right.sidebar,
+  article {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
   .center { padding-left: 0; padding-right: 0; }
-  .article-title { font-size: 2.1rem; }
+  .article-title { font-size: 1.75rem; word-break: break-word; }
+  .left.sidebar {
+    gap: 0.4rem !important;
+    padding: 0.55rem 0.25rem !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+  }
+  .page-title,
+  .page-title a {
+    font-size: 1.2rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    gap: 0.38rem;
+    &::before {
+      width: 1.1rem;
+      height: 1.3rem;
+    }
+  }
+  // Ẩn bớt nút chế độ đọc trên màn hình điện thoại nhỏ để thanh công cụ thoáng đẹp
+  .readermode {
+    display: none !important;
+  }
+  .search .search-button {
+    height: 2.05rem;
+    padding: 0 0.55rem;
+  }
 }
 
 .page-title,
@@ -34,6 +73,7 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  white-space: nowrap;
   color: var(--dark);
   &::before {
     content: "";
@@ -740,66 +780,116 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   }
 }
 
-// Huy hiệu chủ sở hữu Tùng Lý ở thanh bên trái sau khi mở khóa
-.tl-gh-badge {
+// Nút Avatar tròn + Popover menu cá nhân hóa trên thanh công cụ (Mobile & Desktop)
+.tl-user-menu-wrap {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-top: 0.85rem;
-  padding: 0.5rem 0.7rem;
-  border-radius: 10px;
+  justify-content: center;
+  flex: none;
+}
+
+.tl-avatar-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--secondary);
+  background: var(--light);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 3px var(--highlight);
+  }
+  .tl-avatar-thumb {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
+  .tl-avatar-dot {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #34d399;
+    border: 2px solid var(--light);
+  }
+}
+
+.tl-user-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 9999;
+  width: 225px;
+  padding: 0.85rem;
+  border-radius: 12px;
   border: 1px solid var(--lightgray);
-  background: var(--highlight);
-  font-size: 0.8rem;
-  .tl-gh-user {
+  background: var(--light);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  box-sizing: border-box;
+  .tl-pop-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    min-width: 0;
-    overflow: hidden;
+    gap: 0.6rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid var(--lightgray);
   }
-  .tl-gh-avatar {
-    width: 26px;
-    height: 26px;
+  .tl-pop-avatar {
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    flex: none;
     border: 1.5px solid var(--secondary);
+    object-fit: cover;
+    flex: none;
   }
-  .tl-gh-meta {
+  .tl-pop-meta {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    line-height: 1.2;
+    line-height: 1.25;
   }
-  .tl-gh-name {
+  .tl-pop-name {
     font-weight: 700;
-    font-size: 0.8rem;
+    font-size: 0.88rem;
     color: var(--dark);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
-  .tl-gh-handle {
-    font-size: 0.7rem;
-    color: var(--darkgray);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .tl-pop-handle {
+    font-size: 0.76rem;
+    color: var(--gray);
   }
-  .tl-gh-logout {
-    flex: none;
-    padding: 0.22rem 0.55rem;
+  .tl-pop-status {
+    margin: 0.6rem 0;
+    padding: 0.35rem 0.55rem;
     border-radius: 6px;
-    border: 1px solid var(--lightgray);
-    background: var(--light);
-    color: var(--darkgray);
-    font-size: 0.73rem;
+    background: var(--highlight);
+    color: var(--secondary);
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-align: center;
+  }
+  .tl-pop-logout {
+    width: 100%;
+    padding: 0.48rem 0.65rem;
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
+    transition: background 0.15s ease;
     &:hover {
-      color: #ef4444;
-      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.16);
     }
   }
 }

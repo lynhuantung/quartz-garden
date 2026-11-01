@@ -228,25 +228,44 @@ const clientScript = `(function(){
 
   function injectUserBadge(session) {
     const mountBadge = () => {
-      const leftSidebar = document.querySelector(".left.sidebar");
-      if (!leftSidebar || leftSidebar.querySelector(".tl-gh-badge")) return;
-      const avatarSrc = session.avatarUrl || ("https://github.com/" + CFG.owner + ".png?size=64");
-      const badge = document.createElement("div");
-      badge.className = "tl-gh-badge";
-      badge.innerHTML =
-        '<div class="tl-gh-user">' +
-          '<img class="tl-gh-avatar" src="' + avatarSrc + '" alt=""/>' +
-          '<div class="tl-gh-meta">' +
-            '<span class="tl-gh-name">' + CFG.displayName + '</span>' +
-            '<span class="tl-gh-handle">🔒 @' + (session.login || CFG.owner) + '</span>' +
+      const toolbar = document.querySelector(".left.sidebar .flex-component") || document.querySelector(".left.sidebar");
+      if (!toolbar || toolbar.querySelector(".tl-user-menu-wrap")) return;
+      const avatarSrc = session.avatarUrl || ("https://github.com/" + CFG.owner + ".png?size=80");
+      const wrap = document.createElement("div");
+      wrap.className = "tl-user-menu-wrap";
+      wrap.innerHTML =
+        '<button type="button" class="tl-avatar-btn" aria-label="Tài khoản ' + CFG.displayName + '" title="' + CFG.displayName + ' (@' + (session.login || CFG.owner) + ')">' +
+          '<img class="tl-avatar-thumb" src="' + avatarSrc + '" alt="' + CFG.displayName + '"/>' +
+          '<span class="tl-avatar-dot"></span>' +
+        '</button>' +
+        '<div class="tl-user-popover" hidden>' +
+          '<div class="tl-pop-header">' +
+            '<img class="tl-pop-avatar" src="' + avatarSrc + '" alt=""/>' +
+            '<div class="tl-pop-meta">' +
+              '<span class="tl-pop-name">' + CFG.displayName + '</span>' +
+              '<span class="tl-pop-handle">@' + (session.login || CFG.owner) + '</span>' +
+            '</div>' +
           '</div>' +
-        '</div>' +
-        '<button type="button" class="tl-gh-logout" title="Khóa khu vườn tri thức">Khóa</button>';
-      badge.querySelector(".tl-gh-logout").addEventListener("click", () => {
+          '<div class="tl-pop-status">🔒 Đã xác thực GitHub Private</div>' +
+          '<button type="button" class="tl-pop-logout">Khóa khu vườn (Đăng xuất)</button>' +
+        '</div>';
+
+      const btn = wrap.querySelector(".tl-avatar-btn");
+      const pop = wrap.querySelector(".tl-user-popover");
+      const logoutBtn = wrap.querySelector(".tl-pop-logout");
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        pop.hidden = !pop.hidden;
+      });
+      document.addEventListener("click", (e) => {
+        if (!wrap.contains(e.target)) pop.hidden = true;
+      });
+      logoutBtn.addEventListener("click", () => {
         try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
         window.location.reload();
       });
-      leftSidebar.appendChild(badge);
+      toolbar.appendChild(wrap);
     };
     mountBadge();
     document.addEventListener("nav", mountBadge);
