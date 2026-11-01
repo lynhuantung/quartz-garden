@@ -26,15 +26,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout vault
+      - name: Checkout vault (obs-Personal)
         uses: actions/checkout@v4
         with:
           repository: lynhuantung/obs-Personal
           ref: obs-Personal
           fetch-depth: 0
-          # Vault public thì không cần secret; nếu chuyển private, tạo secret VAULT_TOKEN (Contents: read)
           token: ${{ secrets.VAULT_TOKEN || github.token }}
-          path: vault
+          path: vault-personal
+
+      - name: Checkout vault (obs-Mobile - Private)
+        uses: actions/checkout@v4
+        with:
+          repository: lynhuantung/obs-Mobile
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.VAULT_TOKEN || github.token }}
+          path: vault-mobile
 
       - uses: actions/setup-node@v4
         with:
@@ -49,10 +57,10 @@ jobs:
 
       - run: npm ci
 
-      - name: Lọc note dg-publish từ vault
+      - name: Lọc và gộp note dg-publish từ cả 2 vault (obs-Personal & obs-Mobile)
         run: node scripts/sync-vault.mjs
         env:
-          VAULT_DIR: vault/obs-Personal
+          VAULT_DIR: "vault-personal/obs-Personal;vault-mobile"
           # Tùy chọn: đặt secret SITE_PASSWORD để mã hóa cả site bằng một mật khẩu; không đặt thì site công khai
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
 
