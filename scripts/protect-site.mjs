@@ -26,6 +26,7 @@ if (siteKeyBuf.length !== 32) {
 }
 
 const owner = authConfig.owner || "lynhuantung"
+const displayName = process.env.OWNER_DISPLAY_NAME || "Tùng Lý"
 const repo = authConfig.repo || "obs-Personal"
 const branch = process.env.VAULT_BRANCH || "obs-Personal"
 const vaultToken = process.env.VAULT_TOKEN || ""
@@ -61,11 +62,25 @@ let wrappedTokenObj = null
   }
 }
 
-// 1. Mã hóa public/static/contentIndex.json
+// 1. Đếm thống kê từ contentIndex.json trước khi mã hóa để hiển thị trên màn hình khóa cá nhân hóa
+let noteCount = 418
+let topicCount = 11
 const contentIndexPath = path.join(publicDir, "static", "contentIndex.json")
 if (fs.existsSync(contentIndexPath)) {
   const rawIndex = fs.readFileSync(contentIndexPath, "utf8")
   if (!rawIndex.includes('"__tlEncrypted":true')) {
+    try {
+      const idxObj = JSON.parse(rawIndex)
+      const keys = Object.keys(idxObj)
+      noteCount = keys.length || 418
+      const topFolders = new Set()
+      for (const k of keys) {
+        const seg = k.split("/")[0]
+        if (seg && seg !== "index" && seg !== "Release-Notes") topFolders.add(seg)
+      }
+      if (topFolders.size > 0) topicCount = topFolders.size
+    } catch (e) {}
+
     const encIndex = encryptAesGcm(rawIndex, siteKeyBuf)
     fs.writeFileSync(
       contentIndexPath,
@@ -89,12 +104,15 @@ for (const sensitiveFile of ["sitemap.xml", "index.xml"]) {
 const clientScript = `(function(){
   const CFG = ${JSON.stringify({
     owner,
+    displayName,
     repo,
     branch,
+    noteCount,
+    topicCount,
     wrappedToken: wrappedTokenObj,
   })};
   const STORAGE_KEY = "tl_wiki_auth_v1";
-  let cryptoKeyPromise = null;
+  let stopGraphAnim = null;
 
   function b64ToBytes(b64) {
     const bin = atob(b64);
@@ -131,13 +149,13 @@ const clientScript = `(function(){
   }
 
   async function verifyGitHubAndFetchSiteKey(username, secretInput) {
-    const cleanUser = (username || "").trim().toLowerCase();
+    const cleanUser = (username || CFG.owner).trim().toLowerCase();
     if (cleanUser !== CFG.owner.toLowerCase()) {
-      throw new Error("Tài khoản GitHub không có quyền truy cập (chỉ cho phép @" + CFG.owner + ").");
+      throw new Error("Tài khoản GitHub không có quyền truy cập (chỉ dành cho @" + CFG.owner + ").");
     }
     const trimmedSecret = (secretInput || "").trim();
     if (!trimmedSecret) {
-      throw new Error("Vui lòng nhập Mật khẩu truy cập hoặc GitHub Personal Access Token.");
+      throw new Error("Vui lòng nhập Mật khẩu mở khóa hoặc GitHub Personal Access Token.");
     }
     let ghToken = trimmedSecret;
     let fallbackSiteKey = null;
@@ -149,7 +167,7 @@ const clientScript = `(function(){
         ghToken = unwrapped.token || "";
         fallbackSiteKey = unwrapped.siteKey || null;
       } catch (e) {
-        throw new Error("Mật khẩu hoặc GitHub Token không chính xác.");
+        throw new Error("Mật khẩu mở khóa hoặc GitHub Token không chính xác.");
       }
     }
 
@@ -184,7 +202,7 @@ const clientScript = `(function(){
               return {
                 siteKey: parsed.siteKey,
                 login: userData.login,
-                avatarUrl: userData.avatar_url || "",
+                avatarUrl: userData.avatar_url || ("https://github.com/" + CFG.owner + ".png?size=120"),
                 authAt: Date.now()
               };
             }
@@ -201,7 +219,7 @@ const clientScript = `(function(){
       return {
         siteKey: fallbackSiteKey,
         login: CFG.owner,
-        avatarUrl: "https://github.com/" + CFG.owner + ".png?size=64",
+        avatarUrl: "https://github.com/" + CFG.owner + ".png?size=120",
         authAt: Date.now()
       };
     }
@@ -212,15 +230,18 @@ const clientScript = `(function(){
     const mountBadge = () => {
       const leftSidebar = document.querySelector(".left.sidebar");
       if (!leftSidebar || leftSidebar.querySelector(".tl-gh-badge")) return;
+      const avatarSrc = session.avatarUrl || ("https://github.com/" + CFG.owner + ".png?size=64");
       const badge = document.createElement("div");
       badge.className = "tl-gh-badge";
       badge.innerHTML =
         '<div class="tl-gh-user">' +
-          '<span class="tl-gh-lock" title="Đã xác thực GitHub Private">🔒</span>' +
-          (session.avatarUrl ? '<img class="tl-gh-avatar" src="' + session.avatarUrl + '" alt=""/>' : '') +
-          '<span class="tl-gh-name">@' + (session.login || CFG.owner) + '</span>' +
+          '<img class="tl-gh-avatar" src="' + avatarSrc + '" alt=""/>' +
+          '<div class="tl-gh-meta">' +
+            '<span class="tl-gh-name">' + CFG.displayName + '</span>' +
+            '<span class="tl-gh-handle">🔒 @' + (session.login || CFG.owner) + '</span>' +
+          '</div>' +
         '</div>' +
-        '<button type="button" class="tl-gh-logout" title="Đăng xuất và khóa trang">Đăng xuất</button>';
+        '<button type="button" class="tl-gh-logout" title="Khóa khu vườn tri thức">Khóa</button>';
       badge.querySelector(".tl-gh-logout").addEventListener("click", () => {
         try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
         window.location.reload();
@@ -232,6 +253,10 @@ const clientScript = `(function(){
   }
 
   async function decryptCurrentDocument(key, session) {
+    if (stopGraphAnim) {
+      stopGraphAnim();
+      stopGraphAnim = null;
+    }
     const encScript = document.getElementById("tl-encrypted-root");
     const rootEl = document.getElementById("quartz-root");
     if (encScript && rootEl) {
@@ -274,8 +299,7 @@ const clientScript = `(function(){
   const origFetch = window.fetch.bind(window);
   window.fetch = async function(input, init) {
     const urlStr = typeof input === "string" ? input : (input && input.url ? input.url : String(input));
-    // Không chặn các request gọi tới GitHub API hoặc CDN bên ngoài
-    if (urlStr.includes("api.github.com") || urlStr.includes("fonts.googleapis.com") || urlStr.includes("cdn.jsdelivr.net") || urlStr.includes("cdnjs.cloudflare.com")) {
+    if (urlStr.includes("api.github.com") || urlStr.includes("fonts.googleapis.com") || urlStr.includes("cdn.jsdelivr.net") || urlStr.includes("cdnjs.cloudflare.com") || urlStr.includes("github.com/")) {
       return origFetch(input, init);
     }
     const res = await origFetch(input, init);
@@ -325,56 +349,222 @@ const clientScript = `(function(){
     return res;
   };
 
+  function getGreeting() {
+    const h = new Date().getHours();
+    if (h >= 5 && h < 11) return "Chào buổi sáng";
+    if (h >= 11 && h < 14) return "Chào buổi trưa";
+    if (h >= 14 && h < 18) return "Chào buổi chiều";
+    return "Chào buổi tối";
+  }
+
+  function startNeuralGraphCanvas(canvas) {
+    if (!canvas) return null;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    let rafId = null;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const onResize = () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", onResize);
+
+    const labels = [
+      "Second Brain", "Zettelkasten", "Sherlock Holmes", "Feynman",
+      "Synapse", "InfraNodus", "Tài chính", "Ghi chú mạng lưới",
+      "Obsidian", "Tư duy sâu", "Trí nhớ", "TL wiki"
+    ];
+    const count = Math.min(48, Math.max(24, Math.floor((width * height) / 28000)));
+    const nodes = Array.from({ length: count }, (_, i) => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.42,
+      vy: (Math.random() - 0.5) * 0.42,
+      r: i < labels.length ? 3.2 : 1.8 + Math.random() * 1.4,
+      label: i < labels.length ? labels[i] : ""
+    }));
+
+    let mouse = { x: -9999, y: -9999 };
+    const onMove = (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    };
+    window.addEventListener("mousemove", onMove);
+
+    const draw = () => {
+      ctx.clearRect(0, 0, width, height);
+      for (let i = 0; i < nodes.length; i++) {
+        const a = nodes[i];
+        a.x += a.vx;
+        a.y += a.vy;
+        if (a.x < 0 || a.x > width) a.vx *= -1;
+        if (a.y < 0 || a.y > height) a.vy *= -1;
+
+        for (let j = i + 1; j < nodes.length; j++) {
+          const b = nodes[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 155) {
+            const alpha = (1 - dist / 155) * 0.22;
+            ctx.strokeStyle = "rgba(167, 139, 250, " + alpha.toFixed(3) + ")";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+
+        const md = Math.hypot(a.x - mouse.x, a.y - mouse.y);
+        if (md < 180) {
+          const alpha = (1 - md / 180) * 0.45;
+          ctx.strokeStyle = "rgba(196, 181, 253, " + alpha.toFixed(3) + ")";
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = a.label ? "rgba(196, 181, 253, 0.78)" : "rgba(167, 139, 250, 0.42)";
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (a.label) {
+          ctx.font = "500 11px Inter, system-ui, sans-serif";
+          ctx.fillStyle = "rgba(218, 218, 218, 0.34)";
+          ctx.fillText(a.label, a.x + 7, a.y + 3);
+        }
+      }
+      rafId = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("mousemove", onMove);
+    };
+  }
+
   function renderLoginScreen(resolveReady) {
     const rootEl = document.getElementById("quartz-root");
     if (!rootEl) return;
+    const greeting = getGreeting();
+    const avatarUrl = "https://github.com/" + CFG.owner + ".png?size=160";
+
     rootEl.innerHTML = \`
       <div class="tl-login-backdrop">
+        <canvas id="tl-neural-canvas" class="tl-neural-canvas"></canvas>
+        <div class="tl-aurora tl-aurora-1"></div>
+        <div class="tl-aurora tl-aurora-2"></div>
+
         <div class="tl-login-card">
-          <div class="tl-login-header">
-            <div class="tl-gh-logo">
-              <svg height="38" viewBox="0 0 16 16" width="38" fill="currentColor" aria-hidden="true">
-                <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
-              </svg>
-            </div>
-            <h1>TL wiki</h1>
-            <p class="tl-login-sub">Kho tri thức cá nhân (Private) · Yêu cầu đăng nhập GitHub</p>
-            <div class="tl-repo-pill">🔒 github.com/\${CFG.owner}/\${CFG.repo}</div>
+          <div class="tl-card-top-bar">
+            <span class="tl-brand-Chip">
+              <span class="tl-dot-live"></span>
+              TL wiki · Second Brain OS
+            </span>
+            <span class="tl-vault-chip" title="Kho lưu trữ GitHub Private">
+              🔒 \${CFG.owner}/\${CFG.repo}
+            </span>
           </div>
+
+          <div class="tl-profile-hero">
+            <div class="tl-avatar-ring">
+              <img class="tl-avatar-img" src="\${avatarUrl}" alt="\${CFG.displayName}" onerror="this.style.display='none'" />
+              <span class="tl-verified-badge" title="Chủ sở hữu đã xác thực trên GitHub">✓</span>
+            </div>
+            <p class="tl-greeting">\${greeting}, <strong>\${CFG.displayName}</strong></p>
+            <h1 class="tl-hero-title">Khu vườn Tri thức Cá nhân</h1>
+            <p class="tl-hero-quote">“Kết nối các ý tưởng rời rạc thành mạng lưới tri thức sống động.”</p>
+          </div>
+
+          <div class="tl-stats-grid">
+            <div class="tl-stat-item">
+              <span class="tl-stat-num">\${CFG.noteCount}</span>
+              <span class="tl-stat-label">Ghi chú</span>
+            </div>
+            <div class="tl-stat-item">
+              <span class="tl-stat-num">\${CFG.topicCount}</span>
+              <span class="tl-stat-label">Chủ đề</span>
+            </div>
+            <div class="tl-stat-item">
+              <span class="tl-stat-num">AES-256</span>
+              <span class="tl-stat-label">Bảo mật GitHub</span>
+            </div>
+          </div>
+
           <form id="tl-login-form" class="tl-login-form">
+            <input id="tl-gh-user" type="hidden" value="\${CFG.owner}" />
+
+            <div class="tl-owner-identity">
+              <div class="tl-owner-left">
+                <svg height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+                  <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+                </svg>
+                <span>Đăng nhập dưới tên <strong>@\${CFG.owner}</strong></span>
+              </div>
+              <span class="tl-sync-tag">Desktop &amp; Mobile</span>
+            </div>
+
             <label class="tl-field">
-              <span>Tài khoản GitHub</span>
-              <input id="tl-gh-user" type="text" value="\${CFG.owner}" autocomplete="username" required />
+              <div class="tl-secret-wrap">
+                <input id="tl-gh-secret" type="password" placeholder="Nhập mật khẩu mở khóa hoặc GitHub Token..." autocomplete="current-password" required autofocus />
+                <button type="button" id="tl-toggle-pwd" class="tl-toggle-pwd" aria-label="Hiện hoặc ẩn mật khẩu" title="Hiện/ẩn mật khẩu">
+                  <svg id="tl-eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
             </label>
-            <label class="tl-field">
-              <span>Mật khẩu truy cập hoặc GitHub Token</span>
-              <input id="tl-gh-secret" type="password" placeholder="Nhập mật khẩu hoặc ghp_..." autocomplete="current-password" required autofocus />
-            </label>
+
             <div id="tl-login-error" class="tl-login-error" hidden></div>
+
             <button id="tl-login-btn" type="submit" class="tl-login-btn">
-              <span>Đăng nhập với GitHub</span>
+              <span>Mở khóa Khu vườn Tri thức</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
             </button>
           </form>
+
           <div class="tl-login-footer">
             <a href="https://github.com/settings/tokens/new?description=TL+wiki+Access&scopes=repo" target="_blank" rel="noopener">
-              Lấy mã Token nhanh từ GitHub (nếu đang đăng nhập github.com) →
+              Hoặc lấy mã Token trực tiếp từ GitHub →
             </a>
           </div>
         </div>
       </div>
     \`;
 
+    stopGraphAnim = startNeuralGraphCanvas(document.getElementById("tl-neural-canvas"));
+
     const form = document.getElementById("tl-login-form");
     const userInp = document.getElementById("tl-gh-user");
     const secretInp = document.getElementById("tl-gh-secret");
+    const toggleBtn = document.getElementById("tl-toggle-pwd");
     const errBox = document.getElementById("tl-login-error");
     const submitBtn = document.getElementById("tl-login-btn");
+
+    if (toggleBtn && secretInp) {
+      toggleBtn.addEventListener("click", () => {
+        const isPwd = secretInp.type === "password";
+        secretInp.type = isPwd ? "text" : "password";
+        secretInp.focus();
+      });
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       errBox.hidden = true;
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span>Đang xác thực với GitHub...</span>';
+      submitBtn.innerHTML = '<span>Đang xác thực GitHub &amp; giải mã...</span>';
       try {
         const session = await verifyGitHubAndFetchSiteKey(userInp.value, secretInp.value);
         const key = await importSiteKey(session.siteKey);
@@ -387,7 +577,7 @@ const clientScript = `(function(){
         errBox.textContent = err && err.message ? err.message : "Đăng nhập thất bại.";
         errBox.hidden = false;
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span>Đăng nhập với GitHub</span>';
+        submitBtn.innerHTML = '<span>Mở khóa Khu vườn Tri thức</span>';
       }
     });
   }
@@ -450,16 +640,13 @@ for (const htmlFile of walkHtml(publicDir)) {
   let html = fs.readFileSync(htmlFile, "utf8")
   if (html.includes('id="tl-encrypted-root"')) continue
 
-  // Tìm đường dẫn tương đối tới static/tl-wiki-auth.js
   const relDir = path.relative(path.dirname(htmlFile), path.join(publicDir, "static")).replace(/\\/g, "/")
   const scriptSrc = (relDir.startsWith(".") ? relDir : `./${relDir}`) + "/tl-wiki-auth.js"
 
-  // Tách <title>...</title>
   const titleMatch = html.match(/<title>([^<]*)<\/title>/)
   const originalTitle = titleMatch ? titleMatch[1] : "TL wiki"
   const encTitle = encryptAesGcm(originalTitle, siteKeyBuf)
 
-  // Tách nội dung bên trong <div id="quartz-root" ...>...</div></body>
   const bodyMarker = '<div id="quartz-root"'
   const rootStart = html.indexOf(bodyMarker)
   const bodyEnd = html.lastIndexOf("</div></body>")
@@ -479,35 +666,33 @@ for (const htmlFile of walkHtml(publicDir)) {
     tCt: encTitle.ct,
   })
 
-  // Thay thế #quartz-root bằng khung rỗng + payload mã hóa AES-256-GCM
   html =
     html.slice(0, rootStart) +
     `${rootOpenTag}</div><script id="tl-encrypted-root" type="application/json">${payloadJson}</script></body>` +
     html.slice(bodyEnd + "</div></body>".length)
 
-  // Xóa thông tin mô tả bài viết trong các thẻ meta để không lộ nội dung qua link preview
   html = html
-    .replace(/<title>[^<]*<\/title>/, "<title>TL wiki (Private)</title>")
-    .replace(/<meta name="description" content="[^"]*"\/>/g, '<meta name="description" content="TL wiki — Kho tri thức cá nhân (Private)"/>')
-    .replace(/<meta property="og:description" content="[^"]*"\/>/g, '<meta property="og:description" content="TL wiki — Kho tri thức cá nhân (Private)"/>')
-    .replace(/<meta name="twitter:description" content="[^"]*"\/>/g, '<meta name="twitter:description" content="TL wiki — Kho tri thức cá nhân (Private)"/>')
-    .replace(/<meta property="og:title" content="[^"]*"\/>/g, '<meta property="og:title" content="TL wiki (Private)"/>')
-    .replace(/<meta name="twitter:title" content="[^"]*"\/>/g, '<meta name="twitter:title" content="TL wiki (Private)"/>')
-    .replace(/<meta property="og:image:alt" content="[^"]*"\/>/g, '<meta property="og:image:alt" content="TL wiki (Private)"/>')
+    .replace(/<title>[^<]*<\/title>/, "<title>TL wiki · Tùng Lý</title>")
+    .replace(/<meta name="og:site_name" content="[^"]*"\/>/g, '<meta name="og:site_name" content="TL wiki · Tùng Lý"/>')
+    .replace(/<meta name="description" content="[^"]*"\/>/g, '<meta name="description" content="TL wiki — Khu vườn tri thức cá nhân của Tùng Lý"/>')
+    .replace(/<meta property="og:description" content="[^"]*"\/>/g, '<meta property="og:description" content="TL wiki — Khu vườn tri thức cá nhân của Tùng Lý"/>')
+    .replace(/<meta name="twitter:description" content="[^"]*"\/>/g, '<meta name="twitter:description" content="TL wiki — Khu vườn tri thức cá nhân của Tùng Lý"/>')
+    .replace(/<meta property="og:title" content="[^"]*"\/>/g, '<meta property="og:title" content="TL wiki · Tùng Lý"/>')
+    .replace(/<meta name="twitter:title" content="[^"]*"\/>/g, '<meta name="twitter:title" content="TL wiki · Tùng Lý"/>')
+    .replace(/<meta property="og:image:alt" content="[^"]*"\/>/g, '<meta property="og:image:alt" content="TL wiki · Tùng Lý"/>')
 
-  // Chèn script xác thực ngay trước script fetchData trong <head>
   const authScriptTag = `<script src="${scriptSrc}" type="application/javascript" data-persist="true"></script>`
   if (html.includes("const fetchData = fetch(")) {
     html = html.replace(
       '<script type="application/javascript" data-persist="true">const fetchData = fetch(',
-      `${authScriptTag}<script type="application/javascript" data-persist="true">const fetchData = fetch(`,
+      () => `${authScriptTag}<script type="application/javascript" data-persist="true">const fetchData = fetch(`,
     )
   } else {
-    html = html.replace("</head>", `${authScriptTag}</head>`)
+    html = html.replace("</head>", () => `${authScriptTag}</head>`)
   }
 
   fs.writeFileSync(htmlFile, html, "utf8")
   htmlEncryptedCount++
 }
 
-console.log(`protect-site: Đã mã hóa AES-256-GCM và gắn cổng GitHub Auth cho ${htmlEncryptedCount} trang HTML.`)
+console.log(`protect-site: Đã mã hóa AES-256-GCM và gắn cổng GitHub Auth cá nhân hóa cho ${htmlEncryptedCount} trang HTML.`)
