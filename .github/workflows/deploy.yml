@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout vault (obs-Personal)
+      - name: Checkout vault (obs-Personal - Private)
         uses: actions/checkout@v4
         with:
           repository: lynhuantung/obs-Personal
@@ -34,15 +34,6 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.VAULT_TOKEN || github.token }}
           path: vault-personal
-
-      - name: Checkout vault (obs-Mobile - Private)
-        uses: actions/checkout@v4
-        with:
-          repository: lynhuantung/obs-Mobile
-          ref: main
-          fetch-depth: 0
-          token: ${{ secrets.VAULT_TOKEN || github.token }}
-          path: vault-mobile
 
       - uses: actions/setup-node@v4
         with:
@@ -57,10 +48,10 @@ jobs:
 
       - run: npm ci
 
-      - name: Lọc và gộp note dg-publish từ kho hợp nhất (obs-Mobile & lịch sử obs-Personal)
+      - name: Lọc note dg-publish từ kho hợp nhất (obs-Personal)
         run: node scripts/sync-vault.mjs
         env:
-          VAULT_DIR: "vault-mobile;vault-personal/obs-Personal"
+          VAULT_DIR: "vault-personal/obs-Personal"
           HOME_TITLE: "TL wiki"
           # Tùy chọn: đặt secret SITE_PASSWORD để mã hóa cả site bằng một mật khẩu; không đặt thì site công khai
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
