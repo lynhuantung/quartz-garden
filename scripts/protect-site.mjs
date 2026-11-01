@@ -226,21 +226,84 @@ const clientScript = `(function(){
     throw new Error("Không thể xác thực với GitHub.");
   }
 
+  function getKnowledgeLogoSvg(uid, extraClass) {
+    const id = (name) => "tl_" + name + "_" + uid;
+    return (
+      '<svg class="tl-knowledge-logo ' + (extraClass || "") + '" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="TL wiki Knowledge Emblem">' +
+        '<defs>' +
+          '<radialGradient id="' + id("bg") + '" cx="50%" cy="38%" r="65%">' +
+            '<stop offset="0%" stop-color="#251e47"/>' +
+            '<stop offset="55%" stop-color="#131126"/>' +
+            '<stop offset="100%" stop-color="#090a12"/>' +
+          '</radialGradient>' +
+          '<linearGradient id="' + id("rim") + '" x1="0%" y1="0%" x2="100%" y2="100%">' +
+            '<stop offset="0%" stop-color="#c4b5fd"/>' +
+            '<stop offset="50%" stop-color="#8b5cf6"/>' +
+            '<stop offset="100%" stop-color="#38bdf8"/>' +
+          '</linearGradient>' +
+          '<linearGradient id="' + id("crystal") + '" x1="15%" y1="10%" x2="85%" y2="90%">' +
+            '<stop offset="0%" stop-color="#a78bfa" stop-opacity="0.38"/>' +
+            '<stop offset="50%" stop-color="#6366f1" stop-opacity="0.22"/>' +
+            '<stop offset="100%" stop-color="#38bdf8" stop-opacity="0.35"/>' +
+          '</linearGradient>' +
+          '<linearGradient id="' + id("book") + '" x1="0%" y1="0%" x2="100%" y2="0%">' +
+            '<stop offset="0%" stop-color="#38bdf8"/>' +
+            '<stop offset="50%" stop-color="#a78bfa"/>' +
+            '<stop offset="100%" stop-color="#38bdf8"/>' +
+          '</linearGradient>' +
+          '<radialGradient id="' + id("glow") + '" cx="50%" cy="46%" r="42%">' +
+            '<stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.55"/>' +
+            '<stop offset="60%" stop-color="#38bdf8" stop-opacity="0.18"/>' +
+            '<stop offset="100%" stop-color="#090a12" stop-opacity="0"/>' +
+          '</radialGradient>' +
+        '</defs>' +
+        '<circle cx="60" cy="60" r="56" fill="url(#' + id("bg") + ')" stroke="url(#' + id("rim") + ')" stroke-width="2.4"/>' +
+        '<circle cx="60" cy="60" r="48" fill="none" stroke="url(#' + id("rim") + ')" stroke-width="0.9" stroke-dasharray="3 5" opacity="0.45"/>' +
+        '<circle cx="60" cy="50" r="34" fill="url(#' + id("glow") + ')"/>' +
+        '<polygon points="60,17 85,34 81,64 60,77 39,64 35,34" fill="url(#' + id("crystal") + ')" stroke="url(#' + id("rim") + ')" stroke-width="1.6" stroke-linejoin="round"/>' +
+        '<path d="M60 17 L60 77 M35 34 L60 47 L85 34 M39 64 L60 47 L81 64" stroke="#c4b5fd" stroke-width="0.9" opacity="0.35" fill="none"/>' +
+        '<g stroke="#e0e7ff" stroke-width="1.45" stroke-linecap="round" opacity="0.92">' +
+          '<line x1="60" y1="22" x2="44" y2="37"/>' +
+          '<line x1="60" y1="22" x2="76" y2="37"/>' +
+          '<line x1="60" y1="22" x2="60" y2="46"/>' +
+          '<line x1="44" y1="37" x2="60" y2="46"/>' +
+          '<line x1="76" y1="37" x2="60" y2="46"/>' +
+          '<line x1="44" y1="37" x2="46" y2="57"/>' +
+          '<line x1="76" y1="37" x2="74" y2="57"/>' +
+          '<line x1="60" y1="46" x2="46" y2="57"/>' +
+          '<line x1="60" y1="46" x2="74" y2="57"/>' +
+          '<line x1="46" y1="57" x2="60" y2="71"/>' +
+          '<line x1="74" y1="57" x2="60" y2="71"/>' +
+          '<line x1="60" y1="46" x2="60" y2="71"/>' +
+        '</g>' +
+        '<circle cx="60" cy="22" r="3.4" fill="#ffffff" stroke="#38bdf8" stroke-width="1.4"/>' +
+        '<circle cx="44" cy="37" r="3.1" fill="#c4b5fd" stroke="#ffffff" stroke-width="1"/>' +
+        '<circle cx="76" cy="37" r="3.1" fill="#7dd3fc" stroke="#ffffff" stroke-width="1"/>' +
+        '<circle cx="60" cy="46" r="4.6" fill="#ffffff" stroke="#a78bfa" stroke-width="1.8"/>' +
+        '<circle cx="46" cy="57" r="3" fill="#7dd3fc" stroke="#ffffff" stroke-width="1"/>' +
+        '<circle cx="74" cy="57" r="3" fill="#c4b5fd" stroke="#ffffff" stroke-width="1"/>' +
+        '<circle cx="60" cy="71" r="3.2" fill="#ffffff" stroke="#38bdf8" stroke-width="1.3"/>' +
+        '<path d="M60 82 C49 75, 35 74, 24 79 L24 89 C35 84, 49 85, 60 93 C71 85, 85 84, 96 89 L96 79 C85 74, 71 75, 60 82 Z" fill="url(#' + id("book") + ')" opacity="0.95"/>' +
+        '<path d="M22 93 C35 88, 49 89, 60 97 C71 89, 85 88, 98 93" fill="none" stroke="#c4b5fd" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>' +
+        '<line x1="60" y1="77" x2="60" y2="94" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>' +
+      '</svg>'
+    );
+  }
+
   function injectUserBadge(session) {
     const mountBadge = () => {
       const toolbar = document.querySelector(".left.sidebar .flex-component") || document.querySelector(".left.sidebar");
       if (!toolbar || toolbar.querySelector(".tl-user-menu-wrap")) return;
-      const avatarSrc = session.avatarUrl || ("https://github.com/" + CFG.owner + ".png?size=80");
       const wrap = document.createElement("div");
       wrap.className = "tl-user-menu-wrap";
       wrap.innerHTML =
         '<button type="button" class="tl-avatar-btn" aria-label="Tài khoản ' + CFG.displayName + '" title="' + CFG.displayName + ' (@' + (session.login || CFG.owner) + ')">' +
-          '<img class="tl-avatar-thumb" src="' + avatarSrc + '" alt="' + CFG.displayName + '"/>' +
+          getKnowledgeLogoSvg("nav", "tl-avatar-thumb") +
           '<span class="tl-avatar-dot"></span>' +
         '</button>' +
         '<div class="tl-user-popover" hidden>' +
           '<div class="tl-pop-header">' +
-            '<img class="tl-pop-avatar" src="' + avatarSrc + '" alt=""/>' +
+            getKnowledgeLogoSvg("pop", "tl-pop-avatar") +
             '<div class="tl-pop-meta">' +
               '<span class="tl-pop-name">' + CFG.displayName + '</span>' +
               '<span class="tl-pop-handle">@' + (session.login || CFG.owner) + '</span>' +
@@ -473,7 +536,6 @@ const clientScript = `(function(){
     const rootEl = document.getElementById("quartz-root");
     if (!rootEl) return;
     const greeting = getGreeting();
-    const avatarUrl = "https://github.com/" + CFG.owner + ".png?size=160";
 
     rootEl.innerHTML = \`
       <div class="tl-login-backdrop">
@@ -493,9 +555,9 @@ const clientScript = `(function(){
           </div>
 
           <div class="tl-profile-hero">
-            <div class="tl-avatar-ring">
-              <img class="tl-avatar-img" src="\${avatarUrl}" alt="\${CFG.displayName}" onerror="this.style.display='none'" />
-              <span class="tl-verified-badge" title="Chủ sở hữu đã xác thực trên GitHub">✓</span>
+            <div class="tl-avatar-ring" title="Biểu tượng Tri thức &amp; Second Brain — TL wiki">
+              \${getKnowledgeLogoSvg("hero", "tl-avatar-img")}
+              <span class="tl-verified-badge" title="Kho tri thức bảo mật đã xác thực">✦</span>
             </div>
             <p class="tl-greeting">\${greeting}, <strong>\${CFG.displayName}</strong></p>
             <h1 class="tl-hero-title">Khu vườn Tri thức Cá nhân</h1>

@@ -48,10 +48,10 @@ body {
     font-size: 1.2rem !important;
     white-space: nowrap !important;
     flex-shrink: 0;
-    gap: 0.38rem;
+    gap: 0.42rem;
     &::before {
-      width: 1.1rem;
-      height: 1.3rem;
+      width: 1.45rem;
+      height: 1.45rem;
     }
   }
   // Ẩn bớt nút chế độ đọc trên màn hình điện thoại nhỏ để thanh công cụ thoáng đẹp
@@ -77,11 +77,14 @@ body {
   color: var(--dark);
   &::before {
     content: "";
-    width: 1.35rem;
-    height: 1.6rem;
+    width: 1.75rem;
+    height: 1.75rem;
     flex: none;
-    background: linear-gradient(160deg, #b79cff 0%, #8a5cf5 55%, #5b2fd1 100%);
-    clip-path: polygon(50% 0, 92% 22%, 100% 60%, 70% 100%, 20% 92%, 0 52%, 18% 20%);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cdefs%3E%3CradialGradient id='bg' cx='50%25' cy='38%25' r='65%25'%3E%3Cstop offset='0%25' stop-color='%23251e47'/%3E%3Cstop offset='55%25' stop-color='%23131126'/%3E%3Cstop offset='100%25' stop-color='%23090a12'/%3E%3C/radialGradient%3E%3ClinearGradient id='rim' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23c4b5fd'/%3E%3Cstop offset='50%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3ClinearGradient id='crys' x1='15%25' y1='10%25' x2='85%25' y2='90%25'%3E%3Cstop offset='0%25' stop-color='%23a78bfa' stop-opacity='0.45'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8' stop-opacity='0.4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='60' cy='60' r='56' fill='url(%23bg)' stroke='url(%23rim)' stroke-width='4'/%3E%3Cpolygon points='60,17 85,34 81,64 60,77 39,64 35,34' fill='url(%23crys)' stroke='url(%23rim)' stroke-width='2.5' stroke-linejoin='round'/%3E%3Cg stroke='%23e0e7ff' stroke-width='2.2' stroke-linecap='round'%3E%3Cline x1='60' y1='22' x2='44' y2='37'/%3E%3Cline x1='60' y1='22' x2='76' y2='37'/%3E%3Cline x1='60' y1='22' x2='60' y2='71'/%3E%3Cline x1='44' y1='37' x2='60' y2='46'/%3E%3Cline x1='76' y1='37' x2='60' y2='46'/%3E%3Cline x1='44' y1='37' x2='46' y2='57'/%3E%3Cline x1='76' y1='37' x2='74' y2='57'/%3E%3Cline x1='46' y1='57' x2='60' y2='71'/%3E%3Cline x1='74' y1='57' x2='60' y2='71'/%3E%3C/g%3E%3Ccircle cx='60' cy='22' r='4.2' fill='%23fff'/%3E%3Ccircle cx='44' cy='37' r='3.8' fill='%23c4b5fd'/%3E%3Ccircle cx='76' cy='37' r='3.8' fill='%237dd3fc'/%3E%3Ccircle cx='60' cy='46' r='5.5' fill='%23fff' stroke='%23a78bfa' stroke-width='2'/%3E%3Ccircle cx='46' cy='57' r='3.6' fill='%237dd3fc'/%3E%3Ccircle cx='74' cy='57' r='3.6' fill='%23c4b5fd'/%3E%3Cpath d='M60 82 C49 75,35 74,24 79 L24 90 C35 85,49 86,60 94 C71 86,85 85,96 90 L96 79 C85 74,71 75,60 82 Z' fill='url(%23rim)'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: drop-shadow(0 2px 6px rgba(139, 92, 246, 0.32));
   }
 }
 .page-title a::before { display: none; } // chỉ vẽ biểu tượng một lần ở thẻ ngoài
@@ -537,13 +540,25 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 84px;
-  height: 84px;
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
   padding: 3px;
-  background: linear-gradient(135deg, #a78bfa 0%, #6366f1 50%, #38bdf8 100%);
-  box-shadow: 0 8px 28px rgba(138, 92, 245, 0.38);
-  margin-bottom: 0.85rem;
+  background: linear-gradient(135deg, #c4b5fd 0%, #7c3aed 50%, #38bdf8 100%);
+  box-shadow: 0 10px 34px rgba(139, 92, 246, 0.44), 0 0 22px rgba(56, 189, 248, 0.18);
+  margin-bottom: 0.9rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  &:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 14px 40px rgba(139, 92, 246, 0.56), 0 0 28px rgba(56, 189, 248, 0.28);
+  }
+}
+
+.tl-knowledge-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
 }
 
 .tl-avatar-img {
@@ -551,26 +566,25 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  background: #1e1e2a;
-  border: 2px solid #181822;
+  background: #0d0b1a;
 }
 
 .tl-verified-badge {
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 24px;
-  height: 24px;
+  width: 25px;
+  height: 25px;
   border-radius: 50%;
-  background: #8a5cf5;
+  background: linear-gradient(135deg, #8b5cf6 0%, #38bdf8 100%);
   color: #ffffff;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #181822;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  border: 2px solid #131126;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
 }
 
 .tl-greeting {
