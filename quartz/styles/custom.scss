@@ -239,6 +239,126 @@ article {
   }
 }
 
+// ---------- Release Notes (Nhật ký phát hành) ----------
+.rn-home-section {
+  margin-top: 1.8rem;
+  .rn-home-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 2rem 0 0.85rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--lightgray);
+    h2 {
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+    .rn-all-link {
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      white-space: nowrap;
+      &:hover { text-decoration: underline; }
+    }
+  }
+}
+
+.release-notes-page {
+  .rn-intro {
+    color: var(--darkgray);
+    margin-bottom: 1.5rem;
+  }
+  .rn-day-group {
+    margin-bottom: 2rem;
+    h2 {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1.8rem 0 0.75rem;
+    }
+    .rn-day-stat {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--gray);
+    }
+  }
+}
+
+.rn-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--lightgray);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--light);
+}
+
+.rn-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.95rem;
+  border-bottom: 1px solid var(--lightgray);
+  font-size: 0.95rem;
+  transition: background 0.12s ease;
+  &:last-child { border-bottom: none; }
+  &:hover { background: var(--highlight); }
+
+  .rn-badge {
+    flex: none;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.12rem 0.48rem;
+    border-radius: 4px;
+    line-height: 1.35;
+  }
+  .rn-badge.rn-new {
+    background: rgba(16, 185, 129, 0.14);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+  .rn-badge.rn-update {
+    background: var(--highlight);
+    color: var(--secondary);
+    border: 1px solid rgba(138, 92, 245, 0.28);
+  }
+  .rn-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+  .rn-meta {
+    flex: none;
+    font-size: 0.82rem;
+    color: var(--gray);
+    white-space: nowrap;
+  }
+
+  @media all and ($mobile) {
+    flex-wrap: wrap;
+    gap: 0.4rem 0.55rem;
+    .rn-title {
+      white-space: normal;
+      flex-basis: calc(100% - 5.2rem);
+    }
+    .rn-meta {
+      width: 100%;
+      font-size: 0.78rem;
+    }
+  }
+}
+
 // ---------- Chi tiết ----------
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--lightgray); border-radius: 8px; }
