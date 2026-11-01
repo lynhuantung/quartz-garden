@@ -228,8 +228,9 @@ function buildReleaseNotes() {
           const status = parts[0][0]
           const rawPath = parts[parts.length - 1]
           const rel = gitPrefix && rawPath.startsWith(gitPrefix) ? rawPath.slice(gitPrefix.length) : rawPath
-          if (publishedByRel.has(rel)) {
-            current.files.push({ status, rel })
+          const targetKey = outPath(rel)
+          if (publishedByRel.has(rel) || publishedByTarget.has(targetKey)) {
+            current.files.push({ status, rel, targetKey })
           }
         }
       }
@@ -239,7 +240,7 @@ function buildReleaseNotes() {
         const { dateObj, day, dayVN, time } = parseVN(c.isoDate)
         for (const f of c.files) {
           if (f.status === "D") continue
-          const note = publishedByRel.get(f.rel)
+          const note = publishedByRel.get(f.rel) || publishedByTarget.get(f.targetKey)
           if (!note) continue
           rawEvents.push({
             ...note,
