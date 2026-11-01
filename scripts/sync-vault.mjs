@@ -75,11 +75,13 @@ for (const e of fs.readdirSync(outDir)) {
 
 const outPath = (rel) => (stripPrefix && rel.startsWith(stripPrefix) ? rel.slice(stripPrefix.length) : rel)
 
-let notes = 0
 let home = null
-let totalAssets = 0
+const seenTargets = new Set()
+const copiedAssets = new Set()
 // Map lưu theo từng vault: vaultPath -> Map(rel -> noteInfo)
 const publishedByVault = new Map()
+// Map lưu theo target chuẩn: target -> noteInfo
+const publishedByTarget = new Map()
 
 for (const vault of vaults) {
   const all = walk(vault)
@@ -108,34 +110,36 @@ for (const vault of vaults) {
       if (!home) {
         home = target
         target = "index.md"
-        if (!/^title:/im.test(fmOut)) fmOut = `title: ${process.env.HOME_TITLE ?? "Trang chủ"}\n${fmOut}`.trim()
+        if (!/^title:/im.test(fmOut)) fmOut = `title: ${process.env.HOME_TITLE ?? "TL wiki"}\n${fmOut}`.trim()
       } else {
-        // Nếu đã có trang chủ từ vault trước thì bỏ qua các trang dg-home trùng lặp
         continue
       }
     }
-    // Chế độ mật khẩu cả site: chèn `password` vào mọi note (trừ note đã có mật khẩu riêng).
-    if (sitePassword && !/^password:/im.test(fmOut)) {
+    if ( sitePassword && !/^password:/im.test(fmOut) ) {
       fmOut = `${fmOut}${fmOut ? "\n" : ""}password: ${JSON.stringify(sitePassword)}`
     }
     const content = (fmOut ? `---\n${fmOut}\n---\n` : "") + body
     const dest = path.join(outDir, target)
-    fs.mkdirSync(path.dirname(dest), { recursive: true })
-    fs.writeFileSync(dest, content)
-    notes++
+
+    if (!seenTargets.has(target)) {
+      fs.mkdirSync(path.dirname(dest), { recursive: true })
+      fs.writeFileSync(dest, content)
+      seenTargets.add(target)
+    }
 
     if (!isHome) {
       const parts = target.split("/")
       const topic = parts.length > 1 ? parts[0] : "Chung"
-      publishedByRel.set(rel, {
-        key: `${vault}::${rel}`,
+      const noteInfo = publishedByTarget.get(target) ?? {
         rel,
         target,
         dest,
         title: extractTitle(cleanFm, target),
         topic,
         slug: slugifyFilePath(target),
-      })
+      }
+      publishedByTarget.set(target, noteInfo)
+      publishedByRel.set(rel, noteInfo)
     }
 
     // Thu thập ảnh/tệp được nhúng: ![[file.png|300]] và ![alt](path/file.png)
@@ -151,15 +155,18 @@ for (const vault of vaults) {
   }
 
   for (const rel of neededAssets) {
-    const dest = path.join(outDir, outPath(rel))
+    const targetAsset = outPath(rel)
+    if (copiedAssets.has(targetAsset)) continue
+    const dest = path.join(outDir, targetAsset)
     fs.mkdirSync(path.dirname(dest), { recursive: true })
     fs.copyFileSync(path.join(vault, rel), dest)
-    totalAssets++
+    copiedAssets.add(targetAsset)
   }
 }
 
+const notes = seenTargets.size
 if (!home) console.warn("Cảnh báo: không có note nào có dg-home: true, site sẽ thiếu trang chủ.")
-console.log(`Đã chép ${notes} note, ${totalAssets} tệp đính kèm từ ${vaults.length} vault. Trang chủ: ${home ?? "(chưa có)"}`)
+console.log(`Đã chép ${notes} note, ${copiedAssets.size} tệp đính kèm từ ${vaults.length} vault. Trang chủ: ${home ?? "(chưa có)"}`)
 console.log(sitePassword ? "Chế độ mật khẩu cả site: BẬT (mọi note sẽ bị mã hóa lúc build)" : "Chế độ mật khẩu cả site: tắt")
 
 // --- Trích xuất và gộp lịch sử Git từ tất cả các vault để tạo Release Notes ---
@@ -182,8 +189,7 @@ function buildReleaseNotes() {
     return { dateObj: d, day, dayVN: `${dd}/${m}/${y}`, time }
   }
 
-  const allEvents = [] // { dateObj, day, dayVN, time, type, note }
-  const latestDateByKey = new Map()
+  const rawEvents = [] // { dateObj, day, dayVN, time, status, note }
 
   for (const vault of vaults) {
     const publishedByRel = publishedByVault.get(vault)
@@ -214,9 +220,10 @@ function buildReleaseNotes() {
         if (!line.trim()) continue
         if (line.startsWith("COMMIT|")) {
           const [, hash, isoDate, ...msgParts] = line.split("|")
-          current = { hash, isoDate, message: msgParts.join("|").trim(), files: [] }
+          const message = msgParts.join("|").trim()
+          current = { hash, isoDate, message, skipRn: message.includes("[skip-rn]"), files: [] }
           commits.push(current)
-        } else if (current && /^[AMDRC]\d*\t/.test(line)) {
+        } else if (current && !current.skipRn && /^[AMDRC]\d*\t/.test(line)) {
           const parts = line.split("\t")
           const status = parts[0][0]
           const rawPath = parts[parts.length - 1]
@@ -227,37 +234,20 @@ function buildReleaseNotes() {
         }
       }
 
-      const firstSeenDayByRel = new Map()
-      for (let i = commits.length - 1; i >= 0; i--) {
-        const c = commits[i]
-        if (!c.files.length) continue
-        const { day } = parseVN(c.isoDate)
-        for (const f of c.files) {
-          if (f.status === "D") continue
-          if (!firstSeenDayByRel.has(f.rel)) {
-            firstSeenDayByRel.set(f.rel, day)
-          }
-        }
-      }
-
       for (const c of commits) {
-        if (!c.files.length) continue
+        if (c.skipRn || !c.files.length) continue
         const { dateObj, day, dayVN, time } = parseVN(c.isoDate)
         for (const f of c.files) {
           if (f.status === "D") continue
           const note = publishedByRel.get(f.rel)
           if (!note) continue
-          if (!latestDateByKey.has(note.key)) {
-            latestDateByKey.set(note.key, { note, dateObj })
-          }
-          const isNew = firstSeenDayByRel.get(f.rel) === day || f.status === "A"
-          allEvents.push({
+          rawEvents.push({
             ...note,
             dateObj,
             day,
             dayVN,
             time,
-            type: isNew ? "new" : "update",
+            status: f.status,
           })
         }
       }
@@ -267,22 +257,39 @@ function buildReleaseNotes() {
   }
 
   // Sắp xếp toàn bộ sự kiện từ mới nhất -> cũ nhất
-  allEvents.sort((a, b) => b.dateObj - a.dateObj)
+  rawEvents.sort((a, b) => b.dateObj - a.dateObj)
 
-  // Gom nhóm theo ngày (mỗi bài chỉ xuất hiện 1 lần trong 1 ngày với giờ mới nhất)
+  // Tìm ngày xuất hiện đầu tiên thực sự của mỗi bài (duyệt từ cũ nhất -> mới nhất)
+  const firstSeenDayByTarget = new Map()
+  for (let i = rawEvents.length - 1; i >= 0; i--) {
+    const ev = rawEvents[i]
+    if (!firstSeenDayByTarget.has(ev.target)) {
+      firstSeenDayByTarget.set(ev.target, ev.day)
+    }
+  }
+
+  // Gom nhóm theo ngày và xác định Mới / Cập nhật
   const dayMap = new Map()
-  for (const ev of allEvents) {
+  const latestDateByTarget = new Map()
+  for (const ev of rawEvents) {
+    if (!latestDateByTarget.has(ev.target)) {
+      latestDateByTarget.set(ev.target, { note: ev, dateObj: ev.dateObj })
+    }
     if (!dayMap.has(ev.day)) {
       dayMap.set(ev.day, { day: ev.day, dayVN: ev.dayVN, entries: new Map() })
     }
     const group = dayMap.get(ev.day)
     if (!group.entries.has(ev.target)) {
-      group.entries.set(ev.target, ev)
+      const isNew = firstSeenDayByTarget.get(ev.target) === ev.day
+      group.entries.set(ev.target, {
+        ...ev,
+        type: isNew ? "new" : "update",
+      })
     }
   }
 
   // Cập nhật mtime thực tế cho các file đã xuất bản
-  for (const { note, dateObj } of latestDateByKey.values()) {
+  for (const { note, dateObj } of latestDateByTarget.values()) {
     if (fs.existsSync(note.dest)) {
       try {
         fs.utimesSync(note.dest, dateObj, dateObj)
@@ -336,11 +343,11 @@ if (releaseDays.length > 0) {
     })
     .join("\n")
 
-  const rnFm = ["---", "title: Nhật ký phát hành (Release Notes)", "description: Lịch sử các ghi chú mới và cập nhật trên Digital Garden"]
+  const rnFm = ["---", "title: Nhật ký phát hành (Release Notes)", "description: Lịch sử các ghi chú mới và cập nhật trên TL wiki"]
   if (sitePassword) rnFm.push(`password: ${JSON.stringify(sitePassword)}`)
   rnFm.push("---")
 
-  const rnBody = `<div class="release-notes-page"><p class="rn-intro">Trang này tự động ghi nhận mỗi khi có ghi chú mới hoặc nội dung được cập nhật từ Obsidian (Máy tính &amp; Điện thoại) lên Digital Garden (tổng cộng <strong>${notes} ghi chú</strong> qua <strong>${releaseDays.length} ngày phát hành</strong>).</p>${sectionsHtml}</div>`
+  const rnBody = `<div class="release-notes-page"><p class="rn-intro">Trang này tự động ghi nhận mỗi khi có ghi chú mới hoặc nội dung được cập nhật từ Obsidian (Máy tính &amp; Điện thoại) lên <strong>TL wiki</strong> (tổng cộng <strong>${notes} ghi chú</strong> qua <strong>${releaseDays.length} ngày phát hành</strong>).</p>${sectionsHtml}</div>`
   fs.writeFileSync(path.join(outDir, "Release-Notes.md"), `${rnFm.join("\n")}\n\n${rnBody}\n`)
   console.log(`Đã tạo Release-Notes.md: ${releaseDays.length} đợt phát hành, ${recentItems.length} bài gần nhất.`)
 }
@@ -382,13 +389,13 @@ if ((process.env.HOME_VARIANT ?? "cards") !== "none") {
     recentHtml = `<div class="rn-home-section"><div class="rn-home-header"><h2>Mới cập nhật</h2>${allLink}</div><div class="rn-list">${recentRows}</div></div>`
   }
 
-  const html = `<div class="home-cards"><p>Khu vườn ghi chú cá nhân: ${notes} ghi chú, ${topics.length} chủ đề, nối với nhau bằng liên kết. Chọn một chủ đề bên dưới, nhấn <kbd>Ctrl</kbd> + <kbd>K</kbd> để tìm kiếm, hoặc xem toàn bộ mạng lưới ở sơ đồ bên phải.</p>${recentHtml}<h2>Chủ đề</h2><div class="cards">${topics.map(card).join("")}</div></div>`
+  const html = `<div class="home-cards"><p>Khu vườn tri thức <strong>TL wiki</strong>: ${notes} ghi chú, ${topics.length} chủ đề, nối với nhau bằng liên kết. Chọn một chủ đề bên dưới, nhấn <kbd>Ctrl</kbd> + <kbd>K</kbd> để tìm kiếm, hoặc xem toàn bộ mạng lưới ở sơ đồ bên phải.</p>${recentHtml}<h2>Chủ đề</h2><div class="cards">${topics.map(card).join("")}</div></div>`
   const idx = path.join(outDir, "index.md")
   const old = fs.readFileSync(idx, "utf8")
   // index.md luôn có frontmatter dạng ---<khối>---<nội dung> do đoạn trên tạo ra
   const parts = old.split("---")
   const fmLines = (parts[1] ?? "").split(/\r?\n/).filter((l) => !/^title:/i.test(l) && l.trim())
-  fmLines.unshift(`title: ${process.env.HOME_TITLE ?? "Digital Garden"}`)
+  fmLines.unshift(`title: ${process.env.HOME_TITLE ?? "TL wiki"}`)
   fs.writeFileSync(idx, ["---", ...fmLines, "---", "", html, ""].join(String.fromCharCode(10)))
   console.log(`Trang chủ dạng thẻ: ${topics.length} chủ đề`)
 }

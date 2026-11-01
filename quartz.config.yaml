@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./quartz/plugins/quartz-plugins.schema.json
 configuration:
-  pageTitle: Digital Garden
+  pageTitle: TL wiki
   pageTitleSuffix: ""
   enableSPA: true
   enablePopovers: true
