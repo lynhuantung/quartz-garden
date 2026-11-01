@@ -53,17 +53,17 @@ jobs:
         env:
           VAULT_DIR: "vault-personal/obs-Personal"
           HOME_TITLE: "TL wiki"
-          # Tùy chọn: đặt secret SITE_PASSWORD để mã hóa cả site bằng một mật khẩu; không đặt thì site công khai
-          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
-
-      - name: Chế độ mật khẩu (nếu có SITE_PASSWORD)
-        run: node scripts/apply-password-mode.mjs
-        env:
-          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
 
       - run: npx quartz plugin install
       - run: node scripts/patch-plugins.mjs
       - run: npx quartz build
+
+      - name: Mã hóa AES-256-GCM & gắn cổng đăng nhập GitHub Private
+        run: node scripts/protect-site.mjs
+        env:
+          AUTH_CONFIG_PATH: "vault-personal/obs-Personal/.obsidian/tl-wiki-auth.json"
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD || 'TungLy@2026' }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

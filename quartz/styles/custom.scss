@@ -364,3 +364,185 @@ article {
 ::-webkit-scrollbar-thumb { background: var(--lightgray); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gray); }
 footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9; }
+
+
+// ---------- Cổng đăng nhập GitHub Private (TL wiki) ----------
+.tl-login-backdrop {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  background: var(--light);
+}
+
+.tl-login-card {
+  width: 100%;
+  max-width: 410px;
+  padding: 2.2rem 2rem;
+  border-radius: 14px;
+  border: 1px solid var(--lightgray);
+  background: var(--light);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+}
+
+.tl-login-header {
+  text-align: center;
+  margin-bottom: 1.6rem;
+  .tl-gh-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--highlight);
+    color: var(--secondary);
+    margin-bottom: 0.75rem;
+  }
+  h1 {
+    margin: 0 0 0.35rem 0;
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--dark);
+  }
+  .tl-login-sub {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    color: var(--darkgray);
+  }
+  .tl-repo-pill {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--highlight);
+    color: var(--secondary);
+    border: 1px solid var(--lightgray);
+  }
+}
+
+.tl-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  .tl-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.38rem;
+    span {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--dark);
+    }
+    input {
+      padding: 0.68rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--lightgray);
+      background: var(--light);
+      color: var(--dark);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      &:focus {
+        border-color: var(--secondary);
+        box-shadow: 0 0 0 3px var(--highlight);
+      }
+    }
+  }
+  .tl-login-error {
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #ef4444;
+    font-size: 0.84rem;
+    line-height: 1.4;
+  }
+  .tl-login-btn {
+    margin-top: 0.25rem;
+    padding: 0.72rem 1rem;
+    border-radius: 8px;
+    border: none;
+    background: var(--secondary);
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+    &:hover:not(:disabled) {
+      opacity: 0.92;
+    }
+    &:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+  }
+}
+
+.tl-login-footer {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--lightgray);
+  text-align: center;
+  a {
+    font-size: 0.82rem;
+    color: var(--secondary);
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// Huy hiệu trạng thái đăng nhập GitHub ở thanh bên trái
+.tl-gh-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--lightgray);
+  background: var(--highlight);
+  font-size: 0.8rem;
+  .tl-gh-user {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .tl-gh-avatar {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    flex: none;
+  }
+  .tl-gh-name {
+    font-weight: 600;
+    color: var(--dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tl-gh-logout {
+    flex: none;
+    padding: 0.18rem 0.48rem;
+    border-radius: 6px;
+    border: 1px solid var(--lightgray);
+    background: var(--light);
+    color: var(--darkgray);
+    font-size: 0.74rem;
+    cursor: pointer;
+    &:hover {
+      color: #ef4444;
+      border-color: #ef4444;
+    }
+  }
+}
