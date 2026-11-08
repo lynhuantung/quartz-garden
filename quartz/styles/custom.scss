@@ -908,7 +908,7 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   }
 }
 
-/* Nút nổi "Ghi chú ngẫu nhiên" (quartz/static/random-note.js) */
+/* Nút nổi "Ghi chú ngẫu nhiên" + nút random trong ô tìm kiếm (quartz/static/random-note.js) */
 .tl-random-btn {
   position: fixed;
   right: 1.1rem;
@@ -952,6 +952,9 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   svg {
     flex: none;
   }
+  .is-warn {
+    color: #ef4444;
+  }
 
   @media all and not ($desktop) {
     right: 0.9rem;
@@ -960,6 +963,40 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
     .tl-random-label {
       display: none;
     }
+  }
+}
+
+.tl-search-random {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0.5rem 0 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--lightgray);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--secondary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+  &:hover,
+  &:focus-visible {
+    background: var(--highlight);
+    border-color: var(--secondary);
+    outline: none;
+  }
+  svg {
+    flex: none;
+  }
+  .is-warn {
+    color: #ef4444;
   }
 }
 
