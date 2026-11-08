@@ -58,6 +58,9 @@ jobs:
       - run: node scripts/patch-plugins.mjs
       - run: npx quartz build
 
+      - name: Gắn nút Ghi chú ngẫu nhiên vào mọi trang
+        run: node scripts/inject-random-note.mjs
+
       - name: Mã hóa AES-256-GCM & gắn cổng đăng nhập GitHub Private
         run: node scripts/protect-site.mjs
         env:
