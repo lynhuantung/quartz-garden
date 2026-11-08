@@ -966,22 +966,30 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   }
 }
 
-.tl-search-random {
-  display: flex;
+/* Quartz có luật `.search-space > *` ép width:100%, bóng đổ, margin-bottom:2em lên mọi phần tử con
+   của ô tìm kiếm; phải tăng độ ưu tiên và vô hiệu hóa các thuộc tính đó cho nút của mình. */
+.search-space.tl-has-random > button.tl-search-random {
+  width: auto !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  position: absolute;
+  top: 0.42rem;
+  right: 0.5rem;
+  z-index: 2;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  box-sizing: border-box;
-  width: 100%;
-  margin: 0.5rem 0 0.25rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px dashed var(--lightgray);
-  border-radius: 8px;
-  background: transparent;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.32rem 0.7rem;
+  border: 1px solid var(--lightgray);
+  border-radius: 999px;
+  background: var(--light);
   color: var(--secondary);
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background 0.15s ease,
@@ -997,6 +1005,164 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   }
   .is-warn {
     color: #ef4444;
+  }
+}
+
+.search-space.tl-has-random {
+  position: relative;
+  .search-bar {
+    padding-right: 8.5rem;
+  }
+}
+
+/* Tìm kiếm nâng cao (quartz/static/search-plus.js) */
+.search-space.tl-adv-active > .search-layout {
+  display: none !important;
+}
+.search-space > .tl-adv-panel {
+  box-sizing: border-box;
+  max-height: 63vh;
+  overflow-y: auto;
+  border: 1px solid var(--lightgray);
+  &[hidden] {
+    display: none !important;
+  }
+
+  .tl-adv-head,
+  .tl-adv-folders {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 0.8rem 0;
+  }
+  .tl-adv-head:empty {
+    display: none;
+  }
+  .tl-adv-folders-title {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--gray);
+  }
+  .tl-adv-chip,
+  .tl-adv-folder {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0.22rem 0.6rem;
+    border: 1px solid var(--lightgray);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--darkgray);
+    font: inherit;
+    font-size: 0.76rem;
+    cursor: pointer;
+    &:hover {
+      border-color: var(--secondary);
+      color: var(--secondary);
+    }
+  }
+  .tl-adv-chip {
+    background: var(--highlight);
+    color: var(--secondary);
+    font-weight: 600;
+    &.is-neg {
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.08);
+    }
+  }
+  .tl-adv-or {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--gray);
+    text-transform: uppercase;
+  }
+  .tl-adv-summary {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.76rem;
+    color: var(--gray);
+    border-bottom: 1px solid var(--lightgray);
+  }
+  .tl-adv-card {
+    display: block;
+    font-weight: 400;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--lightgray);
+    color: inherit;
+    text-decoration: none;
+    background: transparent;
+    cursor: pointer;
+    &:hover,
+    &.is-active {
+      background: var(--highlight);
+    }
+  }
+  .tl-adv-title {
+    font-weight: 700;
+    color: var(--secondary);
+  }
+  .tl-adv-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
+    font-size: 0.72rem;
+    color: var(--gray);
+  }
+  .tl-adv-tag {
+    padding: 0 0.4rem;
+    border-radius: 6px;
+    background: var(--highlight);
+    color: var(--tertiary);
+    font-weight: 600;
+  }
+  .tl-adv-snippet {
+    margin-top: 0.3rem;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: var(--darkgray);
+  }
+  .tl-adv-more {
+    display: block;
+    width: 100%;
+    padding: 0.7rem;
+    border: 0;
+    background: transparent;
+    color: var(--secondary);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    &:hover {
+      background: var(--highlight);
+    }
+  }
+  mark {
+    padding: 0 0.1em;
+    border-radius: 3px;
+    background: var(--textHighlight);
+    color: inherit;
+  }
+  .tl-adv-help {
+    padding: 0.8rem 0.9rem 1rem;
+    font-size: 0.82rem;
+    color: var(--darkgray);
+  }
+  .tl-adv-help-title {
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+  }
+  .tl-adv-help-row {
+    margin: 0.2rem 0;
+    code {
+      padding: 0.05rem 0.35rem;
+      border-radius: 5px;
+      background: var(--highlight);
+      color: var(--secondary);
+      font-size: 0.78rem;
+    }
   }
 }
 
