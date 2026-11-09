@@ -460,7 +460,76 @@
   // (việc đó tốn vài trăm ms trên điện thoại ở lần bấm đầu tiên).
   var allSlugs = null
   var nextPick = null
+  var nextPickScope = null
   var prefetched = {}
+
+  // Phạm vi random: điều kiện tìm kiếm gần nhất của người dùng. Ô tìm kiếm tự đóng sau mỗi lần nhảy trang,
+  // nên nút nổi phải nhớ điều kiện này, nếu không random sẽ "văng" ra ngoài thư mục/tag đang tìm.
+  var SCOPE_KEY = "tl-random-scope"
+  var SCOPE_ID = "tl-random-scope"
+
+  function getScope() {
+    try {
+      return sessionStorage.getItem(SCOPE_KEY) || ""
+    } catch (e) {
+      return ""
+    }
+  }
+
+  function setScope(q) {
+    q = String(q || "").trim()
+    try {
+      if (q) sessionStorage.setItem(SCOPE_KEY, q)
+      else sessionStorage.removeItem(SCOPE_KEY)
+    } catch (e) {}
+    nextPick = null
+    nextPickScope = null
+    refreshScopeChip()
+  }
+
+  function clearScope() {
+    setScope("")
+    document.querySelectorAll(".search-space").forEach(function (sp) {
+      var st = sp.__tl
+      if (st) {
+        st.input.value = ""
+        update(st)
+      }
+    })
+  }
+
+  function refreshScopeChip() {
+    if (!document.body) return
+    var q = getScope()
+    var chip = document.getElementById(SCOPE_ID)
+    var fab = document.getElementById(BTN_ID)
+    if (fab) fab.title = q ? "Mở ghi chú ngẫu nhiên trong: " + q : "Mở ghi chú ngẫu nhiên"
+    if (!q) {
+      if (chip) chip.hidden = true
+      return
+    }
+    if (!chip) {
+      chip = el("div", "tl-random-scope")
+      chip.id = SCOPE_ID
+      var text = el("button", "tl-random-scope-text")
+      text.type = "button"
+      text.title = "Sửa điều kiện tìm kiếm"
+      text.addEventListener("click", function () {
+        var sb = document.querySelector(".search .search-button")
+        if (sb) sb.click()
+      })
+      var x = el("button", "tl-random-scope-x", "×")
+      x.type = "button"
+      x.setAttribute("aria-label", "Bỏ điều kiện, random toàn bộ")
+      x.title = "Bỏ điều kiện, random toàn bộ ghi chú"
+      x.addEventListener("click", clearScope)
+      chip.appendChild(text)
+      chip.appendChild(x)
+      document.body.appendChild(chip)
+    }
+    chip.hidden = false
+    chip.querySelector(".tl-random-scope-text").textContent = "Random trong: " + q
+  }
 
   async function loadSlugs() {
     if (allSlugs) return allSlugs
@@ -480,9 +549,21 @@
   // (GitHub Pages trả max-age=600), nên lúc bấm spaNavigate lấy ngay từ cache thay vì chờ mạng.
   async function prepareNext() {
     try {
-      var slugs = await loadSlugs()
+      var scope = getScope()
+      var slugs
+      if (scope) {
+        await loadCache()
+        slugs = run(scope).items.map(function (e) {
+          return e.slug
+        })
+      } else {
+        slugs = await loadSlugs()
+      }
       var here = currentSlug()
-      if (!nextPick || nextPick === here) nextPick = choose(slugs, here)
+      if (!nextPick || nextPick === here || nextPickScope !== scope) {
+        nextPick = choose(slugs, here)
+        nextPickScope = scope
+      }
       var s = nextPick
       if (!s || prefetched[s]) return
       prefetched[s] = true
@@ -511,7 +592,16 @@
       return e.slug
     })
     if (slugs.length === 0) return "Không có ghi chú nào khớp."
-    var target = pick(slugs, currentSlug())
+    var here = currentSlug()
+    var target
+    if (nextPick && nextPickScope === q && nextPick !== here && slugs.indexOf(nextPick) !== -1) {
+      target = nextPick
+      markSeen(target)
+    } else {
+      target = pick(slugs, here)
+    }
+    nextPick = null
+    nextPickScope = null
     if (!target) return "Chỉ có 1 ghi chú khớp và bạn đang xem nó rồi."
     go(target)
     return null
@@ -619,7 +709,7 @@
       btn.dataset.busy = "1"
       btn.classList.add("is-spinning")
       try {
-        var err = await openRandom("")
+        var err = await openRandom(getScope())
         if (err) flash(btn.querySelector(".tl-random-label"), err)
       } catch (e) {
         console.error("TL wiki: không mở được ghi chú ngẫu nhiên", e)
@@ -631,6 +721,7 @@
       }
     })
     document.body.appendChild(btn)
+    refreshScopeChip()
   }
 
   // ---------- tìm kiếm nâng cao ----------
@@ -639,6 +730,7 @@
     var i = tokens.indexOf(raw)
     if (i !== -1) tokens.splice(i, 1)
     st.input.value = tokens.length ? tokens.join(" ") + " " : ""
+    setScope(st.input.value)
     st.input.focus()
     update(st)
   }
@@ -670,6 +762,7 @@
         apply: function (st) {
           var cut = q.length - last.length
           st.input.value = q.slice(0, cut) + (neg ? "-" : "") + folderToken(f.label) + " "
+          setScope(st.input.value)
           st.input.focus()
           update(st)
         },
@@ -810,6 +903,7 @@
   function insertToken(st, token) {
     var cur = st.input.value.trim()
     st.input.value = (cur ? cur + " " : "") + token + " "
+    setScope(st.input.value)
     st.input.focus()
     update(st)
   }
@@ -842,6 +936,7 @@
       }),
       function (it) {
         st.input.value = it.q
+        setScope(st.input.value)
         st.input.focus()
         update(st)
       },
@@ -919,6 +1014,7 @@
     var input = st.input
     var timer = null
     input.addEventListener("input", function () {
+      setScope(input.value)
       clearTimeout(timer)
       timer = setTimeout(function () {
         update(st)
@@ -964,6 +1060,7 @@
     if (st.btn.dataset.busy === "1") return
     st.btn.dataset.busy = "1"
     try {
+      setScope(st.input.value)
       var err = await openRandom(st.input.value.trim())
       if (err) flash(st.label, err)
       else remember(st.input.value)
@@ -1012,6 +1109,7 @@
   function mount() {
     if (!document.body) return
     mountFab()
+    refreshScopeChip()
     document.querySelectorAll(".search-space").forEach(ensureSearch)
     idle(prepareNext, 1500)
   }
