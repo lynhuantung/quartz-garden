@@ -498,39 +498,35 @@
     })
   }
 
+  // Không hiện chữ: chỉ một nút × nhỏ gắn ở góc nút nổi khi đang random theo điều kiện tìm kiếm.
+  // Rê chuột / giữ vào nút để xem điều kiện (title); bấm × để random toàn bộ.
   function refreshScopeChip() {
     if (!document.body) return
     var q = getScope()
-    var chip = document.getElementById(SCOPE_ID)
+    var badge = document.getElementById(SCOPE_ID)
     var fab = document.getElementById(BTN_ID)
-    if (fab) fab.title = q ? "Mở ghi chú ngẫu nhiên trong: " + q : "Mở ghi chú ngẫu nhiên"
+    if (fab) {
+      fab.title = q ? "Mở ghi chú ngẫu nhiên trong: " + q : "Mở ghi chú ngẫu nhiên"
+      fab.classList.toggle("has-scope", !!q)
+    }
     if (!q) {
-      if (chip) chip.hidden = true
+      if (badge) badge.hidden = true
       return
     }
-    if (!chip) {
-      chip = el("div", "tl-random-scope")
-      chip.id = SCOPE_ID
-      var text = el("button", "tl-random-scope-text")
-      text.type = "button"
-      text.title = "Sửa điều kiện tìm kiếm"
-      text.addEventListener("click", function () {
-        var sb = document.querySelector(".search .search-button")
-        if (sb) sb.click()
-      })
-      var x = el("button", "tl-random-scope-x", "×")
-      x.type = "button"
-      x.setAttribute("aria-label", "Bỏ điều kiện, random toàn bộ")
-      x.title = "Bỏ điều kiện, random toàn bộ ghi chú"
-      x.addEventListener("click", clearScope)
-      chip.appendChild(text)
-      chip.appendChild(x)
-      document.body.appendChild(chip)
+    if (!badge) {
+      badge = el("button", "tl-random-scope", "×")
+      badge.id = SCOPE_ID
+      badge.type = "button"
+      badge.addEventListener("click", clearScope)
+      document.body.appendChild(badge)
     }
-    chip.hidden = false
-    chip.querySelector(".tl-random-scope-text").textContent = "Random trong: " + q
+    badge.hidden = false
+    badge.setAttribute("aria-label", "Đang random trong: " + q + ". Bấm để bỏ điều kiện, random toàn bộ")
+    badge.title = "Đang random trong: " + q + " — bấm để bỏ điều kiện"
   }
 
+  // Nút nổi chỉ cần danh sách slug, không cần chuẩn hóa toàn bộ nội dung như loadCache()
+  // (việc đó tốn vài trăm ms trên điện thoại ở lần bấm đầu tiên).
   async function loadSlugs() {
     if (allSlugs) return allSlugs
     var data = (await loadIndex()) || {}

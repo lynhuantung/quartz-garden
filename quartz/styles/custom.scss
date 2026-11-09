@@ -952,6 +952,9 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   svg {
     flex: none;
   }
+  &.has-scope {
+    border-color: var(--secondary);
+  }
   .is-warn {
     color: #ef4444;
   }
@@ -1166,58 +1169,38 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   }
 }
 
-/* Chip phạm vi random: nhắc nút nổi đang random theo điều kiện tìm kiếm nào (search-plus.js) */
+/* Dấu × nhỏ ở góc nút nổi: đang random theo điều kiện tìm kiếm (search-plus.js) */
 .tl-random-scope {
   position: fixed;
-  right: 1.1rem;
-  bottom: 4.4rem;
-  z-index: 50;
+  right: calc(1.1rem - 7px);
+  bottom: calc(1.1rem + 33px);
+  z-index: 51;
   display: inline-flex;
-  align-items: stretch;
-  max-width: min(320px, calc(100vw - 2rem));
-  border: 1px solid var(--secondary);
-  border-radius: 999px;
-  background: var(--light);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
-  overflow: hidden;
-  font-size: 0.78rem;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--light);
+  border-radius: 50%;
+  background: var(--secondary);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  -webkit-tap-highlight-color: transparent;
   &[hidden] {
     display: none;
   }
-  button {
-    border: 0;
-    background: transparent;
-    font: inherit;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .tl-random-scope-text {
-    min-width: 0;
-    padding: 0.4rem 0.4rem 0.4rem 0.8rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--secondary);
-    font-weight: 600;
-    &:hover {
-      background: var(--highlight);
-    }
-  }
-  .tl-random-scope-x {
-    flex: none;
-    padding: 0 0.8rem;
-    border-left: 1px solid var(--lightgray);
-    color: var(--darkgray);
-    font-size: 1rem;
-    line-height: 1;
-    &:hover {
-      color: #ef4444;
-      background: rgba(239, 68, 68, 0.08);
-    }
+  &:hover {
+    background: #ef4444;
   }
   @media all and not ($desktop) {
-    right: 0.9rem;
-    bottom: 4.5rem;
+    right: calc(0.9rem - 7px);
+    bottom: calc(0.9rem + 36px);
   }
 }
 
