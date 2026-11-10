@@ -336,6 +336,14 @@
     return s === v || s.indexOf(v + "/") === 0
   }
 
+  // Khớp thư mục ở bất kỳ cấp nào: "/toyota" hoặc "/08-phương" tìm được "Books/08 - Phương thức Toyota".
+  function folderAnywhere(dirN, v) {
+    if (!dirN || !v) return false
+    return dirN.split("/").some(function (seg, i, arr) {
+      return seg.indexOf(v) === 0 || seg.indexOf(v) > 0 && v.length >= 3
+    })
+  }
+
   function matchCond(e, c) {
     var r
     if (c.type === "tag") {
@@ -343,7 +351,7 @@
         return startsPath(x, c.value)
       })
     } else if (c.type === "folder") {
-      r = startsPath(e.slugN, c.value) || startsPath(e.dirN, c.value)
+      r = startsPath(e.slugN, c.value) || startsPath(e.dirN, c.value) || folderAnywhere(e.dirN, c.value)
     } else if (c.type === "links") {
       r = e.links.some(function (l) {
         return l.indexOf(c.value) !== -1
@@ -745,7 +753,7 @@
     var prefix = fold(body.slice(1).replace(/"/g, "")).replace(/\s+/g, "-")
     var list = cache.folders
       .filter(function (f) {
-        return f.key.indexOf(prefix) === 0 && f.key !== prefix
+        return f.key !== prefix && (f.key.indexOf(prefix) === 0 || (prefix.length >= 2 && f.key.indexOf(prefix) > -1))
       })
       .sort(function (a, b) {
         return a.depth - b.depth || b.count - a.count
