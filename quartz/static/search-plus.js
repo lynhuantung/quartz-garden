@@ -1006,7 +1006,10 @@
     if (seq !== st.seq) return
     var res = run(q.trim())
     var empty = !q.trim()
-    st.advanced = empty || res.advanced || folderSuggestions(q).length > 0
+    // Khi Quartz chưa lập xong chỉ mục (điện thoại mất 10–25 giây), lớp này trả kết quả thay.
+    var root = st.space.closest(".search")
+    var quartzPending = !!root && !quartzReady(root)
+    st.advanced = empty || quartzPending || res.advanced || folderSuggestions(q).length > 0
     st.label.textContent = "Ngẫu nhiên · " + res.items.length
     st.space.classList.toggle("tl-adv-active", st.advanced)
     st.panel.hidden = !st.advanced
@@ -1123,7 +1126,7 @@
     if (!space) return
     var n = space.querySelector(".tl-search-loading")
     if (on && !n) {
-      n = el("div", "tl-search-loading", "Đang tải chỉ mục tìm kiếm… Bạn có thể gõ trước, kết quả sẽ hiện khi tải xong.")
+      n = el("div", "tl-search-loading", "Đang tải chỉ mục tìm kiếm đầy đủ…")
       n.style.cssText = "padding:0.6rem 1rem;color:var(--gray);font-size:0.9rem"
       space.appendChild(n)
     }
