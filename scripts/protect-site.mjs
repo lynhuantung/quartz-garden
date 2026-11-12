@@ -29,8 +29,12 @@ const owner = authConfig.owner || "lynhuantung"
 const displayName = process.env.OWNER_DISPLAY_NAME || "Tùng Lý"
 const repo = authConfig.repo || "obs-Personal"
 const branch = process.env.VAULT_BRANCH || "obs-Personal"
-const vaultToken = process.env.VAULT_TOKEN || ""
-const sitePassword = process.env.SITE_PASSWORD || "TungLy@2026"
+// Mật khẩu chung bắt buộc lấy từ secret SITE_PASSWORD; không có mật khẩu dự phòng ghi cứng.
+const sitePassword = process.env.SITE_PASSWORD || ""
+if (sitePassword.length < 12) {
+  console.error("protect-site: thiếu secret SITE_PASSWORD hoặc mật khẩu quá ngắn (cần ít nhất 12 ký tự)")
+  process.exit(1)
+}
 
 function encryptAesGcm(plainText, keyBuf) {
   const iv = crypto.randomBytes(12)
@@ -44,13 +48,14 @@ function encryptAesGcm(plainText, keyBuf) {
   }
 }
 
-// Mã hóa GitHub token + siteKey dự phòng bằng PBKDF2-HMAC-SHA256 (300,000 vòng) + AES-256-GCM
+// Mã hóa siteKey bằng mật khẩu chung: PBKDF2-HMAC-SHA256 (300,000 vòng) + AES-256-GCM.
+// KHÔNG đưa VAULT_TOKEN vào trang: ai có mật khẩu sẽ lấy được token đọc kho vault Private.
 let wrappedTokenObj = null
 {
   const salt = crypto.randomBytes(16)
   const derivedKey = crypto.pbkdf2Sync(sitePassword, salt, 300000, 32, "sha256")
   const secretBundle = JSON.stringify({
-    token: vaultToken || "",
+    token: "",
     siteKey: siteKeyBase64,
   })
   const { iv, ct } = encryptAesGcm(secretBundle, derivedKey)

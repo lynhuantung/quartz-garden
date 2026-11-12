@@ -65,8 +65,7 @@ jobs:
         run: node scripts/protect-site.mjs
         env:
           AUTH_CONFIG_PATH: "vault-personal/obs-Personal/.obsidian/tl-wiki-auth.json"
-          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD || 'TungLy@2026' }}
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
