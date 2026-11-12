@@ -1110,8 +1110,121 @@
     update(st)
   }
 
+  // ---------- mở khung tìm kiếm ngay, kể cả khi Quartz chưa lập xong chỉ mục ----------
+  // Quartz chỉ gắn sự kiện cho nút "Tìm" và Ctrl+K SAU KHI lập chỉ mục FlexSearch cho mọi ghi chú.
+  // Trên điện thoại việc này mất 10–25 giây; trong lúc đó bấm "Tìm" không có phản ứng gì.
+  // Lớp này mở khung ngay, báo đang tải, rồi chạy lại câu đã gõ khi Quartz sẵn sàng.
+  function quartzReady(root) {
+    return !!root.querySelector(".results-container")
+  }
+
+  function setLoading(root, on) {
+    var space = root.querySelector(".search-space")
+    if (!space) return
+    var n = space.querySelector(".tl-search-loading")
+    if (on && !n) {
+      n = el("div", "tl-search-loading", "Đang tải chỉ mục tìm kiếm… Bạn có thể gõ trước, kết quả sẽ hiện khi tải xong.")
+      n.style.cssText = "padding:0.6rem 1rem;color:var(--gray);font-size:0.9rem"
+      space.appendChild(n)
+    }
+    if (n) n.hidden = !on
+  }
+
+  function earlyClose(root) {
+    var cont = root.querySelector(".search-container")
+    if (!cont) return
+    cont.classList.remove("active")
+    var sb = cont.closest(".sidebar")
+    if (sb) sb.style.zIndex = ""
+    var btn = root.querySelector(".search-button")
+    if (btn) btn.setAttribute("aria-expanded", "false")
+    setLoading(root, false)
+  }
+
+  function earlyOpen(root) {
+    var cont = root.querySelector(".search-container")
+    var input = root.querySelector(".search-bar")
+    if (!cont || !input) return
+    cont.classList.add("active")
+    var sb = cont.closest(".sidebar")
+    if (sb) sb.style.zIndex = "9999"
+    var btn = root.querySelector(".search-button")
+    if (btn) btn.setAttribute("aria-expanded", "true")
+    setLoading(root, true)
+    input.focus()
+    if (root.__tlWait) return
+    root.__tlWait = setInterval(function () {
+      if (!document.contains(root)) {
+        clearInterval(root.__tlWait)
+        root.__tlWait = null
+        return
+      }
+      if (!quartzReady(root)) return
+      clearInterval(root.__tlWait)
+      root.__tlWait = null
+      setLoading(root, false)
+      if (!cont.classList.contains("active")) return
+      // Giao lại cho Quartz: mở bằng handler thật rồi chạy câu đã gõ.
+      var q = input.value
+      if (btn) btn.click()
+      if (input.value !== q) input.value = q
+      input.focus()
+      if (q) input.dispatchEvent(new Event("input", { bubbles: true }))
+    }, 250)
+  }
+
+  function bindEarlyOpen() {
+    document.querySelectorAll(".search").forEach(function (root) {
+      if (root.__tlEarly) return
+      root.__tlEarly = true
+      var btn = root.querySelector(".search-button")
+      var cont = root.querySelector(".search-container")
+      if (btn)
+        btn.addEventListener(
+          "click",
+          function (e) {
+            if (quartzReady(root)) return
+            e.preventDefault()
+            e.stopPropagation()
+            earlyOpen(root)
+          },
+          true,
+        )
+      if (cont)
+        cont.addEventListener("click", function (e) {
+          if (!quartzReady(root) && e.target === cont) earlyClose(root)
+        })
+    })
+    if (document.__tlEarlyKeys) return
+    document.__tlEarlyKeys = true
+    document.addEventListener(
+      "keydown",
+      function (e) {
+        var roots = Array.prototype.slice.call(document.querySelectorAll(".search")).filter(function (r) {
+          return !quartzReady(r)
+        })
+        if (!roots.length) return
+        if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+          var vis =
+            roots.filter(function (r) {
+              var b = r.querySelector(".search-button")
+              return b && b.offsetParent !== null
+            })[0] || roots[0]
+          e.preventDefault()
+          var c = vis.querySelector(".search-container")
+          if (c && c.classList.contains("active")) earlyClose(vis)
+          else earlyOpen(vis)
+        } else if (e.key === "Escape") {
+          roots.forEach(earlyClose)
+        }
+      },
+      true,
+    )
+  }
+
   function mount() {
     if (!document.body) return
+    bindEarlyOpen()
     mountFab()
     refreshScopeChip()
     document.querySelectorAll(".search-space").forEach(ensureSearch)
