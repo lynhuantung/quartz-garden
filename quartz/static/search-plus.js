@@ -1804,7 +1804,7 @@
     )
   }
 
-  // Điện thoại: nút nổi ở góc dưới phải (vùng ngón cái tay phải) nhưng tự ẩn khi vuốt xuống đọc,
+  // Nút nổi ở góc dưới phải (vùng ngón cái tay phải trên điện thoại) nhưng tự ẩn khi cuộn xuống đọc,
   // hiện lại khi vuốt lên, khi về gần đầu trang hoặc đọc tới cuối trang. Trang mới mở luôn hiện nút,
   // nên bấm Ngẫu nhiên liên tục không cần dời ngón tay.
   var fabScrollBound = false
@@ -1819,7 +1819,6 @@
   function bindFabScroll() {
     if (fabScrollBound) return
     fabScrollBound = true
-    var mq = window.matchMedia("(max-width: 1199px)")
     var lastY = window.scrollY
     var ticking = false
     window.addEventListener(
@@ -1831,9 +1830,7 @@
           ticking = false
           var y = window.scrollY
           var d = y - lastY
-          if (!mq.matches) {
-            setFabHidden(false)
-          } else if (y < 120 || window.innerHeight + y >= document.documentElement.scrollHeight - 80) {
+          if (y < 120 || window.innerHeight + y >= document.documentElement.scrollHeight - 80) {
             setFabHidden(false)
           } else if (d > 6) {
             setFabHidden(true)
