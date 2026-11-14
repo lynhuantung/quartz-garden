@@ -547,20 +547,141 @@
     return { groups: groups, conds: conds, items: items, advanced: needsAdvanced(groups) }
   }
 
+  // ---------- ôn tập theo đường cong lãng quên (không có nút chấm điểm) ----------
+  // Mỗi lần ĐỌC một ghi chú >= USE_MIN_MS (mở bằng random, tìm kiếm hay liên kết đều tính) là một lần "dùng".
+  // Lần dùng đúng lúc (đã qua >= nửa khoảng giãn) đẩy ghi chú lên bậc kế tiếp: 1 → 3 → 7 → 16 → 35 → 80 → 180 → 365 ngày.
+  // Mở lại quá sớm chỉ ghi nhận "vừa dùng", không lên bậc. Bỏ quên quá lâu (> 4 lần khoảng giãn) thì lùi 1 bậc
+  // ("use it or lose it"; tối thiểu bậc 2 để lần đọc này vẫn được tính). Nút random ưu tiên ghi chú đến hạn,
+  // xen ghi chú chưa xem để dần phủ hết wiki; tồn đọng càng nhiều thì càng ít nạp ghi chú mới (như giới hạn thẻ mới của Anki).
+  // Lưu trong localStorage nên mỗi thiết bị/trình duyệt có lịch riêng.
+  var MEMORY_KEY = "tl-memory"
+  var DAY = 86400000
+  var INTERVALS = [1, 3, 7, 16, 35, 80, 180, 365]
+  var USE_MIN_MS = 8000
+  var NEW_SHARE_MAX = 0.3
+  var NEW_SHARE_MIN = 0.1
+  var DUE_COMFORT = 30
+  var memo = null
+
+  function memLoad() {
+    if (memo) return memo
+    try {
+      memo = JSON.parse(localStorage.getItem(MEMORY_KEY) || "{}") || {}
+    } catch (e) {
+      memo = {}
+    }
+    return memo
+  }
+
+  function memSave() {
+    try {
+      localStorage.setItem(MEMORY_KEY, JSON.stringify(memo || {}))
+    } catch (e) {}
+  }
+
+  function stepDays(n) {
+    return INTERVALS[Math.min(Math.max(n, 1), INTERVALS.length) - 1]
+  }
+
+  // Bản ghi: [bậc, lần dùng cuối (ms), hạn ôn (ms)].
+  function recordUse(slug, now) {
+    now = now || Date.now()
+    var m = memLoad()
+    var r = m[slug]
+    var n
+    if (!r) {
+      n = 1
+    } else {
+      var gap = stepDays(r[0]) * DAY
+      var elapsed = now - r[1]
+      if (elapsed < gap / 2) {
+        r[1] = now
+        memSave()
+        return r
+      }
+      n = elapsed > gap * 4 ? Math.max(2, r[0] - 1) : r[0] + 1
+    }
+    m[slug] = [n, now, now + stepDays(n) * DAY]
+    memSave()
+    return m[slug]
+  }
+
+  var useTimer = null
+  function trackUse() {
+    if (useTimer) clearTimeout(useTimer)
+    var slug = currentSlug()
+    if (isExcluded(slug)) return
+    useTimer = setTimeout(function () {
+      useTimer = null
+      if (currentSlug() === slug) recordUse(slug)
+    }, USE_MIN_MS)
+  }
+
+  function weightedPick(list, weightOf) {
+    var total = 0
+    var w = list.map(function (x) {
+      var v = Math.max(weightOf(x), 0.0001)
+      total += v
+      return v
+    })
+    var t = Math.random() * total
+    for (var i = 0; i < list.length; i++) {
+      t -= w[i]
+      if (t <= 0) return list[i]
+    }
+    return list[list.length - 1]
+  }
+
+  function memStats(slugs, now) {
+    now = now || Date.now()
+    var m = memLoad()
+    var due = 0
+    var fresh = 0
+    slugs.forEach(function (s) {
+      var r = m[s]
+      if (!r) fresh++
+      else if (r[2] <= now) due++
+    })
+    return { due: due, fresh: fresh, total: slugs.length }
+  }
+
   // ---------- ngẫu nhiên ----------
   // Chọn ngẫu nhiên, ưu tiên ghi chú chưa xem trong phiên. Không ghi lịch sử (xem markSeen).
   function choose(slugs, here) {
     var seen = readSeen()
-    var fresh = slugs.filter(function (s) {
+    var cands = slugs.filter(function (s) {
       return s !== here && seen.indexOf(s) === -1
     })
-    if (fresh.length === 0) {
-      fresh = slugs.filter(function (s) {
+    if (cands.length === 0) {
+      cands = slugs.filter(function (s) {
         return s !== here
       })
     }
-    if (fresh.length === 0) return null
-    return fresh[Math.floor(Math.random() * fresh.length)]
+    if (cands.length === 0) return null
+    var now = Date.now()
+    var m = memLoad()
+    var due = []
+    var fresh = []
+    var later = []
+    cands.forEach(function (s) {
+      var r = m[s]
+      if (!r) fresh.push(s)
+      else if (r[2] <= now) due.push(s)
+      else later.push(s)
+    })
+    // Quá hạn càng lâu (so với khoảng giãn của bậc đó) càng dễ được chọn.
+    function overdue(s) {
+      var r = m[s]
+      return 1 + (now - r[2]) / (stepDays(r[0]) * DAY)
+    }
+    // Tỉ lệ nạp ghi chú mới: 30% khi tồn đọng ít, giảm dần khi tồn đọng nhiều, không dưới 10%.
+    var newShare = Math.min(NEW_SHARE_MAX, Math.max(NEW_SHARE_MIN, (NEW_SHARE_MAX * DUE_COMFORT) / Math.max(due.length, 1)))
+    if (due.length && (!fresh.length || Math.random() >= newShare)) return weightedPick(due, overdue)
+    if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)]
+    // Chưa có gì đến hạn: ưu tiên ghi chú sắp đến hạn (sắp bị quên).
+    return weightedPick(later, function (s) {
+      return 1 / (1 + (m[s][2] - now) / DAY)
+    })
   }
 
   // Lịch sử tự cắt còn MAX_HISTORY mục; khi mọi ứng viên đều đã xem, choose() tự bỏ qua lịch sử.
@@ -628,7 +749,9 @@
     var badge = document.getElementById(SCOPE_ID)
     var fab = document.getElementById(BTN_ID)
     if (fab) {
-      fab.title = q ? "Mở ghi chú ngẫu nhiên trong: " + q : "Mở ghi chú ngẫu nhiên"
+      var st = allSlugs ? memStats(allSlugs) : null
+      var info = st ? " · đến hạn ôn " + st.due + " · chưa xem " + st.fresh + "/" + st.total : ""
+      fab.title = (q ? "Ôn ghi chú trong: " + q : "Ôn ghi chú theo đường cong lãng quên") + info
       fab.classList.toggle("has-scope", !!q)
     }
     if (!q) {
@@ -655,6 +778,7 @@
     allSlugs = Object.keys(data).filter(function (s) {
       return !isExcluded(s)
     })
+    refreshScopeChip()
     return allSlugs
   }
 
@@ -1360,6 +1484,7 @@
     bindEarlyOpen()
     showPageCode()
     linkReleaseNotes()
+    trackUse()
     mountFab()
     refreshScopeChip()
     document.querySelectorAll(".search-space").forEach(ensureSearch)
@@ -1374,6 +1499,13 @@
   // Dùng cho kiểm thử / gỡ lỗi.
   window.__tlSearch = {
     parseQuery: parseQuery,
+    recordUse: recordUse,
+    memory: function () {
+      return memLoad()
+    },
+    choose: async function (now) {
+      return choose(await loadSlugs(), currentSlug())
+    },
     needsAdvanced: needsAdvanced,
     fold: fold,
     run: async function (q) {
