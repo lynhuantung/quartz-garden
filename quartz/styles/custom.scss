@@ -959,13 +959,38 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
     color: #ef4444;
   }
 
+  // Điện thoại: nút tròn 52px màu nhấn, nổi rõ trên nền tối lẫn sáng, chừa vùng vuốt của hệ điều hành.
   @media all and not ($desktop) {
-    right: 0.9rem;
-    bottom: 0.9rem;
-    padding: 0.8rem;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    justify-content: center;
+    border: none;
+    background: var(--secondary);
+    color: var(--light);
+    box-shadow:
+      0 6px 18px rgba(0, 0, 0, 0.35),
+      0 0 0 3px color-mix(in srgb, var(--light) 70%, transparent);
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+    &:hover {
+      background: var(--secondary);
+      transform: none;
+    }
     .tl-random-label {
       display: none;
     }
+  }
+}
+
+// Điện thoại: chừa chỗ cuối trang để nút nổi không che dòng chữ cuối cùng.
+@media all and not ($desktop) {
+  body {
+    padding-bottom: 5rem;
   }
 }
 
@@ -1204,8 +1229,8 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
     background: #ef4444;
   }
   @media all and not ($desktop) {
-    right: calc(0.9rem - 7px);
-    bottom: calc(0.9rem + 36px);
+    right: calc(1rem - 4px);
+    bottom: calc(1rem + 38px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -1257,7 +1282,52 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   .note-properties .note-properties-key { width: 5.5rem; }
 }
 
-// Lý do nút Ngẫu nhiên chọn ghi chú này (tự ẩn sau 4 giây)
+// Lý do nút Ngẫu nhiên chọn ghi chú này: một dòng nhỏ ngay dưới tiêu đề, không che nội dung.
+.tl-why-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.4rem 0 1rem;
+  padding: 0.5rem 0.4rem 0.5rem 0.75rem;
+  border-left: 3px solid var(--secondary);
+  border-radius: 0 8px 8px 0;
+  background: var(--highlight);
+  color: var(--darkgray);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  .tl-why-icon {
+    flex: none;
+    display: inline-flex;
+    margin-top: 0.12rem;
+    color: var(--secondary);
+  }
+  .tl-why-text {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .tl-why-close {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    margin: -0.25rem 0 -0.25rem 0;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--gray);
+    font: inherit;
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+    &:hover {
+      color: var(--dark);
+      background: var(--lightgray);
+    }
+  }
+}
+
+// Dự phòng khi trang không có tiêu đề: thẻ nổi tạm thời (tự ẩn sau 4 giây)
 .tl-why {
   position: fixed;
   left: 1rem;

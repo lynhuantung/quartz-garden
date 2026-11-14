@@ -759,7 +759,7 @@
   }
   var TRAIL_KEY = "tl-trail"
   var WHY_KEY = "tl-why"
-  var REL_TEXT = ["có liên kết trực tiếp", "có hàng xóm chung", "thường được dẫn cùng nhau", "nội dung tương đồng, nên đối chiếu"]
+  var REL_TEXT = ["hai ghi chú liên kết thẳng tới nhau", "cùng dẫn tới mấy ghi chú giống nhau", "hay được nhắc cùng nhau", "nội dung gần nhau, nên đọc đối chiếu"]
   var G = null
   var whyOf = {}
   var commLabel = {}
@@ -936,7 +936,7 @@
       })
       var f = from.get(s2)
       var srcTitle = G.title[G.idx.get(f[0])]
-      return [s2, "Liên quan tới «" + srcTitle + "»: " + REL_TEXT[f[1]]]
+      return [s2, "Gần với «" + srcTitle + "» bạn vừa đọc: " + REL_TEXT[f[1]]]
     }
     if (mode === "bridge") {
       if (!G) return null
@@ -997,7 +997,24 @@
     var old = document.getElementById("tl-why")
     if (old) old.remove()
     if (!w || w.s !== currentSlug()) return
-    showTip(w.w)
+    // Đặt lý do ngay dưới tiêu đề, nằm trong dòng chữ: không che nội dung, đọc lúc nào cũng được.
+    var h = document.querySelector(".center .article-title") || document.querySelector(".article-title")
+    if (!h) return showTip(w.w)
+    var n = el("div", "tl-why-inline")
+    n.id = "tl-why"
+    n.setAttribute("role", "status")
+    var ic = el("span", "tl-why-icon")
+    ic.innerHTML = DICE_SVG.replace(/width="22" height="22"/, 'width="15" height="15"')
+    n.appendChild(ic)
+    n.appendChild(el("span", "tl-why-text", w.w))
+    var x = el("button", "tl-why-close", "×")
+    x.type = "button"
+    x.setAttribute("aria-label", "Ẩn lý do chọn ghi chú")
+    x.addEventListener("click", function () {
+      n.remove()
+    })
+    n.appendChild(x)
+    h.insertAdjacentElement("afterend", n)
   }
 
   // Lịch sử tự cắt còn MAX_HISTORY mục; khi mọi ứng viên đều đã xem, choose() tự bỏ qua lịch sử.
