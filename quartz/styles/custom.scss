@@ -1233,6 +1233,7 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   background: var(--highlight);
   border: 1px solid var(--lightgray);
   white-space: nowrap;
+  cursor: help;
 }
 
 // Điện thoại: ngăn Explorer khi đóng vẫn lòi 16px ở mép trái (dịch -100vw nhưng ngăn bắt đầu ở x=16),
@@ -1273,6 +1274,18 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   border: 1px solid var(--lightgray);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
   pointer-events: none;
+  white-space: pre-line;
   transition: opacity 0.5s ease;
   &.is-out { opacity: 0; }
+}
+
+// Nhật ký phát hành: mục "Cập nhật website" (phiên bản code của site)
+.release-notes-page .rn-site {
+  .rn-site-ver { padding: 0.45rem 0; border-bottom: 1px dashed var(--lightgray); }
+  .rn-site-ver:last-child { border-bottom: none; }
+  .rn-site-head { display: flex; align-items: center; gap: 0.5rem; }
+  .rn-site-badge { background: var(--highlight); color: var(--secondary); font-family: var(--codeFont); }
+  ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
+  li { margin: 0.1rem 0; font-size: 0.92rem; }
+  .rn-site-older summary { cursor: pointer; color: var(--gray); font-size: 0.9rem; margin-top: 0.4rem; }
 }

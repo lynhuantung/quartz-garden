@@ -107,9 +107,90 @@
     return pa.length - pb.length
   }
 
-  function codeBadge(code) {
+  // Huy hiệu mã: rê chuột (title) hoặc chạm (điện thoại) để xem ý nghĩa nhánh và các thẻ cha,
+  // vd 8/18b → "Nhánh 8: Bộ não thứ hai" + "8/18: Bốn trụ cột của bộ não thứ hai là gì?".
+  var codeTitles = null
+  var codeFolder = {}
+
+  function loadCodeTitles(data) {
+    if (codeTitles) return codeTitles
+    codeTitles = {}
+    Object.keys(data).forEach(function (slug) {
+      var d = data[slug] || {}
+      var c = codeFromName(String(d.filePath || "").split("/").pop() || slug.split("/").pop())
+      if (c && !codeTitles[c]) codeTitles[c] = String(d.title || slug)
+      // Dự phòng khi nhánh chưa có thẻ mục lục N/0: dùng tên thư mục chứa thẻ.
+      var dir = String(d.filePath || "").split("/")
+      if (c && dir.length > 1 && !codeFolder[c.split("/")[0]]) codeFolder[c.split("/")[0]] = dir[dir.length - 2].replace(/^\d+\s*-\s*/, "")
+    })
+    return codeTitles
+  }
+
+  function cleanTopic(t) {
+    return String(t || "")
+      .replace(/\s*\((mục lục|muc luc)\)\s*$/i, "")
+      .replace(/\s*-\s*Mục lục\s*$/i, "")
+      .trim()
+  }
+
+  function codeMeaning(code) {
+    if (!codeTitles) return ""
+    var parts = code.split("/")
+    var branch = parts[0]
+    var toks = (parts[1] || "").match(/\d+|[a-z]+/g) || []
+    var lines = []
+    var root = codeTitles[branch + "/0"]
+    lines.push("Nhánh " + branch + ": " + (root ? cleanTopic(root) : codeFolder[branch] || "(chưa có thẻ mục lục " + branch + "/0)"))
+    for (var i = 1; i < toks.length; i++) {
+      var pc = branch + "/" + toks.slice(0, i).join("")
+      if (codeTitles[pc]) lines.push(pc + ": " + codeTitles[pc])
+    }
+    return lines.join("\n")
+  }
+
+  function showTip(text) {
+    var old = document.getElementById("tl-why")
+    if (old) old.remove()
+    var n = el("div", "tl-why", text)
+    n.id = "tl-why"
+    n.setAttribute("role", "status")
+    document.body.appendChild(n)
+    setTimeout(function () {
+      n.classList.add("is-out")
+    }, 4000)
+    setTimeout(function () {
+      n.remove()
+    }, 4600)
+  }
+
+  function codeBadge(code, tappable) {
     var b = el("span", "tl-zettel-code", code)
-    b.title = "Mã Zettel"
+    b.title = "Mã Zettel " + code
+    var fill = function () {
+      var t = codeMeaning(code)
+      if (t) b.title = t
+      return t
+    }
+    if (!fill() && typeof loadIndex === "function")
+      loadIndex()
+        .then(function (data) {
+          loadCodeTitles(data || {})
+          fill()
+        })
+        .catch(function () {})
+    if (tappable) {
+      b.setAttribute("role", "button")
+      b.tabIndex = 0
+      var open = function (ev) {
+        ev.preventDefault()
+        var t = fill()
+        if (t) showTip(t)
+      }
+      b.addEventListener("click", open)
+      b.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") open(ev)
+      })
+    }
     return b
   }
 
@@ -120,7 +201,7 @@
     document.querySelectorAll(".article-title").forEach(function (h) {
       var old = h.querySelector(".tl-zettel-code")
       if (old) old.remove()
-      if (code) h.insertBefore(codeBadge(code), h.firstChild)
+      if (code) h.insertBefore(codeBadge(code, true), h.firstChild)
     })
   }
 
@@ -916,16 +997,7 @@
     var old = document.getElementById("tl-why")
     if (old) old.remove()
     if (!w || w.s !== currentSlug()) return
-    var n = el("div", "tl-why", w.w)
-    n.id = "tl-why"
-    n.setAttribute("role", "status")
-    document.body.appendChild(n)
-    setTimeout(function () {
-      n.classList.add("is-out")
-    }, 4000)
-    setTimeout(function () {
-      n.remove()
-    }, 4600)
+    showTip(w.w)
   }
 
   // Lịch sử tự cắt còn MAX_HISTORY mục; khi mọi ứng viên đều đã xem, choose() tự bỏ qua lịch sử.
@@ -1020,6 +1092,7 @@
     if (allSlugs) return allSlugs
     var data = (await loadIndex()) || {}
     buildGraph(data)
+    loadCodeTitles(data)
     allSlugs = Object.keys(data).filter(function (s) {
       return !isExcluded(s)
     })
@@ -1747,6 +1820,12 @@
   // Dùng cho kiểm thử / gỡ lỗi.
   window.__tlSearch = {
     parseQuery: parseQuery,
+    codeMeaning: function (c) {
+      return loadIndex().then(function (d) {
+        loadCodeTitles(d || {})
+        return codeMeaning(c)
+      })
+    },
     recordUse: recordUse,
     memory: function () {
       return memLoad()

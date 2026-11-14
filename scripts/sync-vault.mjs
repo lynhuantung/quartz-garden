@@ -316,6 +316,28 @@ function buildReleaseNotes() {
 const { days: releaseDays, recentItems } = buildReleaseNotes()
 const releaseNotesSlug = slugifyFilePath("Release-Notes.md")
 
+// Đọc CHANGELOG-SITE.md: "## <phiên bản> · <ngày>" rồi các dòng "- ...". 8 phiên bản mới nhất hiện sẵn, còn lại thu gọn.
+function renderSiteChangelog() {
+  const file = path.join(root, "CHANGELOG-SITE.md")
+  if (!fs.existsSync(file)) return ""
+  const text = fs.readFileSync(file, "utf8").replace(/<!--[\s\S]*?-->/g, "")
+  const versions = []
+  for (const line of text.split(/\r?\n/)) {
+    const h = /^##\s+(.+?)\s*·\s*(.+?)\s*$/.exec(line)
+    if (h) versions.push({ ver: h[1], day: h[2], items: [] })
+    else if (versions.length && /^\s*-\s+/.test(line)) versions[versions.length - 1].items.push(line.replace(/^\s*-\s+/, "").trim())
+  }
+  if (!versions.length) return ""
+  const one = (v) =>
+    `<div class="rn-site-ver"><div class="rn-site-head"><span class="rn-badge rn-site-badge">v${escapeHtml(v.ver)}</span><span class="rn-meta">${escapeHtml(v.day)}</span></div><ul>${v.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul></div>`
+  const shown = versions.slice(0, 8).map(one).join("")
+  const older = versions.slice(8)
+  const more = older.length
+    ? `<details class="rn-site-older"><summary>Phiên bản cũ hơn (${older.length})</summary>${older.map(one).join("")}</details>`
+    : ""
+  return `<section class="rn-day-group rn-site"><h2>Cập nhật website <span class="rn-day-stat">phiên bản mới nhất v${escapeHtml(versions[0].ver)}</span></h2>${shown}${more}</section>`
+}
+
 // Tạo trang content/Release-Notes.md
 if (releaseDays.length > 0) {
   // Link không có href (chỉ data-rn-href): Quartz (crawl-links) tính mọi <a href> là liên kết, khiến Nhật ký
@@ -350,7 +372,9 @@ if (releaseDays.length > 0) {
   if (sitePassword) rnFm.push(`password: ${JSON.stringify(sitePassword)}`)
   rnFm.push("---")
 
-  const rnBody = `<div class="release-notes-page"><p class="rn-intro">Trang này tự động ghi nhận mỗi khi có ghi chú mới hoặc nội dung được cập nhật từ Obsidian (Máy tính &amp; Điện thoại) lên <strong>TL wiki</strong> (tổng cộng <strong>${notes} ghi chú</strong> qua <strong>${releaseDays.length} ngày phát hành</strong>).</p>${sectionsHtml}</div>`
+  // Mục "Cập nhật website": phiên bản code của site, đọc từ CHANGELOG-SITE.md (viết tay, ngắn gọn).
+  const siteHtml = renderSiteChangelog()
+  const rnBody = `<div class="release-notes-page"><p class="rn-intro">Trang này tự động ghi nhận mỗi khi có ghi chú mới hoặc nội dung được cập nhật từ Obsidian (Máy tính &amp; Điện thoại) lên <strong>TL wiki</strong> (tổng cộng <strong>${notes} ghi chú</strong> qua <strong>${releaseDays.length} ngày phát hành</strong>).</p>${siteHtml}${sectionsHtml}</div>`
   fs.writeFileSync(path.join(outDir, "Release-Notes.md"), `${rnFm.join("\n")}\n\n${rnBody}\n`)
   console.log(`Đã tạo Release-Notes.md: ${releaseDays.length} đợt phát hành, ${recentItems.length} bài gần nhất.`)
 }
