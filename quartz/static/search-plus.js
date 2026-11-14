@@ -1777,9 +1777,17 @@
         btn.addEventListener(
           "click",
           function (e) {
-            if (quartzReady(root)) return
+            if (quartzReady(root)) {
+              // Quartz có thể đã dựng khung kết quả nhưng chưa gắn sự kiện cho nút: chạm mà không mở thì tự mở.
+              setTimeout(function () {
+                var c = root.querySelector(".search-container")
+                if (c && !c.classList.contains("active")) earlyOpen(root)
+              }, 350)
+              return
+            }
             e.preventDefault()
-            e.stopPropagation()
+            // stopImmediatePropagation: chặn cả handler của Quartz gắn trên chính nút, kẻo nó đóng khung vừa mở.
+            e.stopImmediatePropagation()
             earlyOpen(root)
           },
           true,
