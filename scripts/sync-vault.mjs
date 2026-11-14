@@ -318,6 +318,8 @@ const releaseNotesSlug = slugifyFilePath("Release-Notes.md")
 
 // Tạo trang content/Release-Notes.md
 if (releaseDays.length > 0) {
+  // Link không có href (chỉ data-rn-href): Quartz (crawl-links) tính mọi <a href> là liên kết, khiến Nhật ký
+  // phát hành thành backlink của mọi ghi chú và là nút khổng lồ trên đồ thị. search-plus.js gắn href khi xem trang.
   const renderItem = (item, showDate = false) => {
     const badge =
       item.type === "new"
@@ -325,7 +327,7 @@ if (releaseDays.length > 0) {
         : `<span class="rn-badge rn-update">Cập nhật</span>`
     const titleEl = sitePassword
       ? `<span class="rn-title">${escapeHtml(item.title)}</span>`
-      : `<a class="rn-title" href="./${item.slug}">${escapeHtml(item.title)}</a>`
+      : `<a class="rn-title" data-rn-href="${escapeHtml(item.slug)}">${escapeHtml(item.title)}</a>`
     const metaText = showDate
       ? `${escapeHtml(item.topic)} · ${item.dayVN}`
       : `${escapeHtml(item.topic)} · ${item.time}`
@@ -380,7 +382,7 @@ if ((process.env.HOME_VARIANT ?? "cards") !== "none") {
             : `<span class="rn-badge rn-update">Cập nhật</span>`
         const titleEl = sitePassword
           ? `<span class="rn-title">${escapeHtml(item.title)}</span>`
-          : `<a class="rn-title" href="./${item.slug}">${escapeHtml(item.title)}</a>`
+          : `<a class="rn-title" data-rn-href="${escapeHtml(item.slug)}">${escapeHtml(item.title)}</a>`
         return `<div class="rn-item">${badge}${titleEl}<span class="rn-meta">${escapeHtml(item.topic)} · ${item.dayVN}</span></div>`
       })
       .join("")

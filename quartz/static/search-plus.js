@@ -10,6 +10,8 @@
 //   links:tên          ghi chú có liên kết tới note "tên"
 //   is:orphan          ghi chú mồ côi (không liên kết đi và không ai liên kết tới)
 //   is:untagged        ghi chú chưa gắn tag
+//   7/1a  hoặc mã:7/1a  thẻ Zettel theo mã (lấy từ tên tệp "7-1a Tiêu đề.md"), gồm cả thẻ con 7/1a1...;
+//                      mã:7/ = mọi thẻ nhánh 7
 //   -điều-kiện         loại trừ, dùng được với mọi điều kiện trên (-từ, -#tag, -/thư-mục, -"cụm từ")
 //   a | b   (hoặc OR) khớp nhóm điều kiện bên trái HOẶC nhóm bên phải, ví dụ: #sach sherlock | #memory
 //
@@ -67,6 +69,68 @@
       }
     }
     return { text: out, map: map }
+  }
+
+  // ---------- mã Zettel ----------
+  // Tên tệp thẻ dạng "7-1a Tiêu đề.md" (mã 7/1a, dấu "/" đổi thành "-"). Slug của Quartz: "7-1a-tiêu-đề".
+  // Property "Mã" không có trong contentIndex nên mã được suy ra từ tên tệp/slug.
+  var CODE_RE = /^(\d+)-(\d+[a-z0-9]*)(?:[\s-]|$)/i
+  var CODE_QUERY_RE = /^\d+\/\d*[a-z0-9]*$/i
+
+  function codeFromName(name) {
+    var m = CODE_RE.exec(String(name || ""))
+    return m ? m[1] + "/" + m[2].toLowerCase() : ""
+  }
+
+  // "7/1" khớp 7/1, 7/1a, 7/1b, 7/1a1 nhưng KHÔNG khớp 7/10; "7/" khớp mọi thẻ nhánh 7.
+  function codeMatch(code, v) {
+    if (!code || !v) return false
+    if (code === v) return true
+    if (code.indexOf(v) !== 0) return false
+    var last = v.charAt(v.length - 1)
+    var next = code.charAt(v.length)
+    if (last === "/") return true
+    return /\d/.test(last) ? /[a-z]/.test(next) : /\d/.test(next)
+  }
+
+  // So sánh mã theo kiểu Folgezettel: 7/1 < 7/1a < 7/1b < 7/2 < 7/10.
+  function codeCmp(a, b) {
+    var pa = a.match(/\d+|[a-z]+|\//g) || []
+    var pb = b.match(/\d+|[a-z]+|\//g) || []
+    for (var i = 0; i < Math.min(pa.length, pb.length); i++) {
+      if (pa[i] === pb[i]) continue
+      var na = /^\d/.test(pa[i])
+      var nb = /^\d/.test(pb[i])
+      if (na && nb) return parseInt(pa[i], 10) - parseInt(pb[i], 10)
+      return pa[i] < pb[i] ? -1 : 1
+    }
+    return pa.length - pb.length
+  }
+
+  function codeBadge(code) {
+    var b = el("span", "tl-zettel-code", code)
+    b.title = "Mã Zettel"
+    return b
+  }
+
+  // Hiện mã Zettel cạnh tiêu đề trang (tiêu đề lấy từ property title nên không chứa mã).
+  function showPageCode() {
+    var slug = currentSlug()
+    var code = codeFromName(decodeURIComponent(slug.split("/").pop() || ""))
+    document.querySelectorAll(".article-title").forEach(function (h) {
+      var old = h.querySelector(".tl-zettel-code")
+      if (old) old.remove()
+      if (code) h.insertBefore(codeBadge(code), h.firstChild)
+    })
+  }
+
+  // Nhật ký phát hành sinh link dạng <a data-rn-href="slug"> (không href) để Quartz không tính là liên kết
+  // (không thành backlink, không nối trên đồ thị). Gắn href lúc xem để vẫn bấm được.
+  function linkReleaseNotes() {
+    var pre = rootPrefix(currentSlug())
+    document.querySelectorAll("a[data-rn-href]").forEach(function (a) {
+      if (!a.getAttribute("href")) a.setAttribute("href", pre + a.getAttribute("data-rn-href"))
+    })
   }
 
   function el(tag, cls, text) {
@@ -184,7 +248,7 @@
       for (var i = 1; i <= parts.length; i++) {
         var label = parts.slice(0, i).join("/")
         var key = fold(label).replace(/\s+/g, "-")
-        if (!folders[key]) folders[key] = { key: key, label: label, count: 0, depth: i }
+        if (!folders[key]) folders[key] = { key: key, label: label, count: 0, depth: i, segs: pathSegs(label) }
         folders[key].count++
       }
       entries.push({
@@ -199,6 +263,8 @@
         tagsN: tags.map(fold),
         dirDisp: dirDisp,
         dirN: fold(dirDisp).replace(/\s+/g, "-"),
+        dirSegs: pathSegs(dirDisp),
+        code: codeFromName(fp.split("/").pop() || slug.split("/").pop()),
         links: links,
         orphan: false,
       })
@@ -269,6 +335,11 @@
     } else if (t.charAt(0) === "/") {
       c.type = "folder"
       v = t.slice(1)
+    } else if ((m = /^(ma|mã|zettel):(.*)$/i.exec(t))) {
+      c.type = "code"
+      v = m[2]
+    } else if (CODE_QUERY_RE.test(t) && t.indexOf("/") > 0) {
+      c.type = "code"
     } else if ((m = /^(title|tieu-de|body|noi-dung|links|is):(.*)$/i.exec(t))) {
       var k = m[1].toLowerCase()
       v = m[2]
@@ -281,6 +352,8 @@
     if (!v) return null
     c.disp = v
     if (c.type === "folder" || c.type === "links") c.value = fold(v).replace(/\s+/g, "-").replace(/\/+$/, "")
+    if (c.type === "folder") c.segs = pathSegs(v.replace(/\/+$/, ""))
+    if (c.type === "code") c.value = fold(v).replace(/-/g, "/").replace(/\s+/g, "")
     else c.value = normSpace(v)
     return c
   }
@@ -312,7 +385,7 @@
     for (var i = 0; i < conds.length; i++) {
       var c = conds[i]
       if (c.neg || c.phrase || c.field !== "any") return true
-      if (c.type === "folder" || c.type === "links" || c.type === "is") return true
+      if (c.type === "folder" || c.type === "links" || c.type === "is" || c.type === "code") return true
       if (c.type === "tag") tagCount++
     }
     return tagCount >= 2
@@ -323,6 +396,7 @@
     if (c.type === "tag") base = "#" + c.disp
     else if (c.type === "folder") base = "Thư mục: " + c.disp
     else if (c.type === "links") base = "Liên kết tới: " + c.disp
+    else if (c.type === "code") base = "Mã Zettel: " + c.value
     else if (c.type === "is")
       base = c.value === "orphan" ? "Mồ côi" : c.value === "untagged" ? "Chưa có tag" : "is:" + c.disp + " (?)"
     else if (c.field === "title") base = "Tiêu đề: " + c.disp
@@ -334,6 +408,39 @@
   // ---------- bộ lọc ----------
   function startsPath(s, v) {
     return s === v || s.indexOf(v + "/") === 0
+  }
+
+  // Chuẩn hóa từng cấp thư mục: bỏ dấu, gộp khoảng trắng/gạch ngang/gạch dưới/dấu chấm thành một "-".
+  // "Books/08 - Phương thức" -> ["books", "08-phuong-thuc"]; gõ "/08 phuong" hay "/08-phuong" đều khớp.
+  function segNorm(x) {
+    return fold(x).replace(/[\s\-_.–—]+/g, "-").replace(/^-+|-+$/g, "")
+  }
+
+  function pathSegs(p) {
+    return String(p || "")
+      .split("/")
+      .map(segNorm)
+      .filter(function (x, i, a) {
+        return x || i === a.length - 1
+      })
+  }
+
+  // Khớp đường dẫn theo từng cấp: mỗi cấp gõ vào chỉ cần là phần ĐẦU của cấp tương ứng,
+  // cấp cuối được khớp giữa tên khi dài >= 3 ký tự. "/book/08" khớp "Books/08 - Phương thức Toyota";
+  // "/book/" gợi ý các thư mục con của Books. Trả về cấp bắt đầu khớp (nhỏ hơn = sát gốc hơn), -1 nếu không khớp.
+  function segMatch(segs, qs) {
+    if (!segs || !qs || !qs.length) return -1
+    for (var s = 0; s + qs.length <= segs.length; s++) {
+      var ok = true
+      for (var j = 0; j < qs.length && ok; j++) {
+        var seg = segs[s + j]
+        var q = qs[j]
+        var last = j === qs.length - 1
+        ok = seg.indexOf(q) === 0 || (last && q.length >= 3 && seg.indexOf(q) > 0)
+      }
+      if (ok) return s
+    }
+    return -1
   }
 
   // Khớp thư mục ở bất kỳ cấp nào: "/toyota" hoặc "/08-phương" tìm được "Books/08 - Phương thức Toyota".
@@ -351,7 +458,13 @@
         return startsPath(x, c.value)
       })
     } else if (c.type === "folder") {
-      r = startsPath(e.slugN, c.value) || startsPath(e.dirN, c.value) || folderAnywhere(e.dirN, c.value)
+      r =
+        startsPath(e.slugN, c.value) ||
+        startsPath(e.dirN, c.value) ||
+        folderAnywhere(e.dirN, c.value) ||
+        segMatch(e.dirSegs, c.segs) !== -1
+    } else if (c.type === "code") {
+      r = codeMatch(e.code, c.value)
     } else if (c.type === "links") {
       r = e.links.some(function (l) {
         return l.indexOf(c.value) !== -1
@@ -427,6 +540,7 @@
       })
     } else {
       items.sort(function (a, b) {
+        if (a.code && b.code && a.dirN === b.dirN) return codeCmp(a.code, b.code)
         return a.slugN < b.slugN ? -1 : a.slugN > b.slugN ? 1 : 0
       })
     }
@@ -750,15 +864,29 @@
     var neg = last.charAt(0) === "-"
     var body = neg ? last.slice(1) : last
     if (body.charAt(0) !== "/") return []
-    var prefix = fold(body.slice(1).replace(/"/g, "")).replace(/\s+/g, "-")
+    var raw = body.slice(1).replace(/"/g, "")
+    var prefix = fold(raw).replace(/\s+/g, "-")
+    var qs = pathSegs(raw)
+    var endsSlash = /\/$/.test(raw)
     var list = cache.folders
-      .filter(function (f) {
-        return f.key !== prefix && (f.key.indexOf(prefix) === 0 || (prefix.length >= 2 && f.key.indexOf(prefix) > -1))
+      .map(function (f) {
+        if (f.key === prefix.replace(/\/+$/, "")) return null
+        var at = segMatch(f.segs, qs)
+        if (at === -1 && f.key.indexOf(prefix) === 0) at = 0
+        else if (at === -1 && prefix.length >= 2 && f.key.indexOf(prefix) > -1) at = 99
+        if (at === -1) return null
+        // Gõ "/book/" thì chỉ gợi ý cấp con trực tiếp, không trải hết các cấp cháu.
+        if (endsSlash && f.segs.length !== at + qs.length) return null
+        return { f: f, at: at }
       })
+      .filter(Boolean)
       .sort(function (a, b) {
-        return a.depth - b.depth || b.count - a.count
+        return a.at - b.at || a.f.depth - b.f.depth || b.f.count - a.f.count || (a.f.label < b.f.label ? -1 : 1)
       })
       .slice(0, MAX_FOLDER_SUGGEST)
+      .map(function (x) {
+        return x.f
+      })
     return list.map(function (f) {
       return {
         label: f.label,
@@ -782,6 +910,7 @@
     ["title:từ  body:từ", "chỉ tìm trong tiêu đề / nội dung"],
     ["links:tên", "ghi chú có liên kết tới note đó"],
     ["is:orphan  is:untagged", "ghi chú mồ côi / chưa có tag"],
+    ["7/1a   mã:7/", "thẻ Zettel theo mã (gồm thẻ con) / cả nhánh 7"],
     ["a | b   hoặc   a OR b", "khớp nhóm bên trái HOẶC nhóm bên phải"],
   ]
 
@@ -868,6 +997,7 @@
       var card = el("a", "tl-adv-card" + (i === 0 ? " is-active" : ""))
       card.href = rootPrefix(currentSlug()) + encodeURI(e.slug)
       var title = el("div", "tl-adv-title")
+      if (e.code) title.appendChild(codeBadge(e.code))
       appendHighlighted(title, e.title, terms)
       card.appendChild(title)
       var meta = el("div", "tl-adv-meta")
@@ -1228,6 +1358,8 @@
   function mount() {
     if (!document.body) return
     bindEarlyOpen()
+    showPageCode()
+    linkReleaseNotes()
     mountFab()
     refreshScopeChip()
     document.querySelectorAll(".search-space").forEach(ensureSearch)

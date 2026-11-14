@@ -1106,6 +1106,11 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
     font-weight: 700;
     color: var(--secondary);
   }
+  .tl-adv-title .tl-zettel-code {
+    font-size: 0.75em;
+    margin-right: 0.4rem;
+    vertical-align: 0.1em;
+  }
   .tl-adv-meta {
     display: flex;
     flex-wrap: wrap;
@@ -1211,4 +1216,42 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   to {
     transform: rotate(360deg);
   }
+}
+
+// Mã Zettel (7/1a) cạnh tiêu đề trang và trong kết quả tìm kiếm
+.tl-zettel-code {
+  display: inline-block;
+  font-family: var(--codeFont);
+  font-size: 0.55em;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 0.05em 0.45em;
+  margin-right: 0.5rem;
+  vertical-align: 0.3em;
+  border-radius: 0.4em;
+  color: var(--secondary);
+  background: var(--highlight);
+  border: 1px solid var(--lightgray);
+  white-space: nowrap;
+}
+
+// Điện thoại: ngăn Explorer khi đóng vẫn lòi 16px ở mép trái (dịch -100vw nhưng ngăn bắt đầu ở x=16),
+// và thư mục đang mở tự đặt visibility: visible nên tiêu đề dài hiện ra. Ẩn hẳn mọi thứ bên trong khi đóng.
+@media (max-width: 800px) {
+  .explorer.collapsed .explorer-content,
+  .explorer.collapsed .explorer-content * {
+    visibility: hidden !important;
+  }
+}
+
+// Bảng Properties: tag xuống dòng thay vì bị bóp thành cột chữ dọc trên màn hình hẹp.
+.note-properties .note-properties-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  .note-properties-separator { display: none; }
+  .tag-link { word-break: normal; overflow-wrap: anywhere; }
+}
+@media (max-width: 600px) {
+  .note-properties .note-properties-key { width: 5.5rem; }
 }
