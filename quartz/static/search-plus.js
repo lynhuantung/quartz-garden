@@ -1771,27 +1771,7 @@
     document.querySelectorAll(".search").forEach(function (root) {
       if (root.__tlEarly) return
       root.__tlEarly = true
-      var btn = root.querySelector(".search-button")
       var cont = root.querySelector(".search-container")
-      if (btn)
-        btn.addEventListener(
-          "click",
-          function (e) {
-            if (quartzReady(root)) {
-              // Quartz có thể đã dựng khung kết quả nhưng chưa gắn sự kiện cho nút: chạm mà không mở thì tự mở.
-              setTimeout(function () {
-                var c = root.querySelector(".search-container")
-                if (c && !c.classList.contains("active")) earlyOpen(root)
-              }, 350)
-              return
-            }
-            e.preventDefault()
-            // stopImmediatePropagation: chặn cả handler của Quartz gắn trên chính nút, kẻo nó đóng khung vừa mở.
-            e.stopImmediatePropagation()
-            earlyOpen(root)
-          },
-          true,
-        )
       if (cont)
         cont.addEventListener("click", function (e) {
           if (!quartzReady(root) && e.target === cont) earlyClose(root)
@@ -1883,6 +1863,28 @@
     idle(prepareNext, 200)
   }
 
+  // Bắt chạm nút "Tìm" ở cấp tài liệu ngay khi script nạp (trước cả mount và trước handler của Quartz):
+  // ngay sau đăng nhập luồng chính rất bận, chạm sớm vẫn phải mở được khung tìm kiếm.
+  document.addEventListener(
+    "click",
+    function (e) {
+      var b = e.target && e.target.closest ? e.target.closest(".search-button") : null
+      var root = b && b.closest(".search")
+      if (!root) return
+      if (quartzReady(root)) {
+        // Quartz có thể đã dựng khung kết quả nhưng chưa gắn sự kiện cho nút: chạm mà không mở thì tự mở.
+        setTimeout(function () {
+          var c = root.querySelector(".search-container")
+          if (c && !c.classList.contains("active")) earlyOpen(root)
+        }, 350)
+        return
+      }
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      earlyOpen(root)
+    },
+    true,
+  )
   // `nav` chỉ phát sau khi Quartz (và cổng đăng nhập, nếu có) đã sẵn sàng,
   // nên các nút không hiện trên màn hình khóa.
   document.addEventListener("nav", mount)
