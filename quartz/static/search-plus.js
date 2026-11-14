@@ -1821,6 +1821,19 @@
     fabScrollBound = true
     var lastY = window.scrollY
     var ticking = false
+    // Chỉ tính cuộn do người dùng (lăn chuột, vuốt, phím); Quartz tự cuộn cây thư mục/trang sau khi chuyển
+    // trang thì bỏ qua, kẻo nút vừa hiện đã bị ẩn.
+    var lastInput = 0
+    var markInput = function () {
+      lastInput = Date.now()
+    }
+    ;["wheel", "touchmove", "keydown"].forEach(function (t) {
+      window.addEventListener(t, markInput, { passive: true, capture: true })
+    })
+    document.addEventListener("nav", function () {
+      lastY = window.scrollY
+      lastInput = 0
+    })
     window.addEventListener(
       "scroll",
       function () {
@@ -1830,6 +1843,10 @@
           ticking = false
           var y = window.scrollY
           var d = y - lastY
+          if (Date.now() - lastInput > 1000) {
+            lastY = y
+            return
+          }
           if (y < 120 || window.innerHeight + y >= document.documentElement.scrollHeight - 80) {
             setFabHidden(false)
           } else if (d > 6) {
