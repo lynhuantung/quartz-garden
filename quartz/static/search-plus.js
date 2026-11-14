@@ -1809,7 +1809,8 @@
     mountFab()
     refreshScopeChip()
     document.querySelectorAll(".search-space").forEach(ensureSearch)
-    idle(prepareNext, 1500)
+    // Chọn và tải trước ghi chú kế tiếp gần như ngay khi trang mở, để lần bấm sau lấy từ cache.
+    idle(prepareNext, 200)
   }
 
   // `nav` chỉ phát sau khi Quartz (và cổng đăng nhập, nếu có) đã sẵn sàng,

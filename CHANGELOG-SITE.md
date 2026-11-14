@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.14-6 · 14/11/2026
+- Nút Ngẫu nhiên chuẩn bị sẵn ghi chú kế tiếp ngay khi trang vừa mở, bấm sớm cũng nhanh.
+
 ## 2026.11.14-5 · 14/11/2026
 - Bảo mật bản điện thoại: bỏ mật khẩu dự phòng ghi cứng, không còn nhúng token đọc kho ghi chú vào trang.
 
