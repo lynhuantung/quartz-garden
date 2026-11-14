@@ -963,8 +963,8 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   @media all and not ($desktop) {
     right: 1rem;
     bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-    width: 52px;
-    height: 52px;
+    width: 56px;
+    height: 56px;
     padding: 0;
     justify-content: center;
     border: none;
@@ -985,6 +985,22 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
       display: none;
     }
   }
+}
+
+// Ẩn khi đang vuốt xuống đọc (search-plus.js bindFabScroll), trượt ra khỏi mép dưới màn hình.
+.tl-random-btn,
+.tl-random-scope {
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.tl-random-btn.is-hidden,
+.tl-random-scope.is-hidden {
+  transform: translateY(calc(100% + 2.5rem));
+  opacity: 0;
+  pointer-events: none;
 }
 
 // Điện thoại: chừa chỗ cuối trang để nút nổi không che dòng chữ cuối cùng.
@@ -1230,7 +1246,7 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   }
   @media all and not ($desktop) {
     right: calc(1rem - 4px);
-    bottom: calc(1rem + 38px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(1rem + 42px + env(safe-area-inset-bottom, 0px));
   }
 }
 

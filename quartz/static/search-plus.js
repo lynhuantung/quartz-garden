@@ -1816,6 +1816,49 @@
     )
   }
 
+  // Điện thoại: nút nổi ở góc dưới phải (vùng ngón cái tay phải) nhưng tự ẩn khi vuốt xuống đọc,
+  // hiện lại khi vuốt lên, khi về gần đầu trang hoặc đọc tới cuối trang. Trang mới mở luôn hiện nút,
+  // nên bấm Ngẫu nhiên liên tục không cần dời ngón tay.
+  var fabScrollBound = false
+  function setFabHidden(on) {
+    var fab = document.getElementById(BTN_ID)
+    if (!fab) return
+    if (on && fab.dataset.busy === "1") on = false
+    fab.classList.toggle("is-hidden", on)
+    var badge = document.getElementById(SCOPE_ID)
+    if (badge) badge.classList.toggle("is-hidden", on)
+  }
+  function bindFabScroll() {
+    if (fabScrollBound) return
+    fabScrollBound = true
+    var mq = window.matchMedia("(max-width: 1199px)")
+    var lastY = window.scrollY
+    var ticking = false
+    window.addEventListener(
+      "scroll",
+      function () {
+        if (ticking) return
+        ticking = true
+        requestAnimationFrame(function () {
+          ticking = false
+          var y = window.scrollY
+          var d = y - lastY
+          if (!mq.matches) {
+            setFabHidden(false)
+          } else if (y < 120 || window.innerHeight + y >= document.documentElement.scrollHeight - 80) {
+            setFabHidden(false)
+          } else if (d > 6) {
+            setFabHidden(true)
+          } else if (d < -6) {
+            setFabHidden(false)
+          }
+          if (Math.abs(d) > 6) lastY = y
+        })
+      },
+      { passive: true },
+    )
+  }
+
   function mount() {
     if (!document.body) return
     bindEarlyOpen()
@@ -1824,6 +1867,8 @@
     trackUse()
     showWhy()
     mountFab()
+    setFabHidden(false)
+    bindFabScroll()
     refreshScopeChip()
     document.querySelectorAll(".search-space").forEach(ensureSearch)
     // Chọn và tải trước ghi chú kế tiếp gần như ngay khi trang mở, để lần bấm sau lấy từ cache.

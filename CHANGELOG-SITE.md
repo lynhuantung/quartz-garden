@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.15-2 · 15/11/2026
+- Điện thoại: nút Ngẫu nhiên giữ ở góc dưới phải cho dễ bấm bằng ngón cái, tự ẩn khi vuốt xuống đọc và hiện lại khi vuốt lên hoặc mở ghi chú mới.
+
 ## 2026.11.15-1 · 15/11/2026
 - Điện thoại: nút Ngẫu nhiên to, rõ màu hơn và không che dòng chữ cuối trang.
 - Lý do chọn ghi chú hiện thành một dòng nhỏ dưới tiêu đề, lời dễ hiểu hơn, không còn che nội dung.
