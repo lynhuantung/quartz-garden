@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.14-5 · 14/11/2026
+- Bảo mật bản điện thoại: bỏ mật khẩu dự phòng ghi cứng, không còn nhúng token đọc kho ghi chú vào trang.
+
 ## 2026.11.14-4 · 14/11/2026
 - Rê chuột hoặc chạm vào mã Zettel (vd 8/18b) để xem ý nghĩa nhánh và thẻ cha.
 - Nhật ký phát hành có thêm mục "Cập nhật website" ghi lại từng phiên bản.
