@@ -210,6 +210,7 @@
   async function loadCache() {
     if (cache) return cache
     var data = (await loadIndex()) || {}
+    buildGraph(data)
     var entries = []
     var folders = {}
     var tagCounts = {}
@@ -552,15 +553,12 @@
   // Lần dùng đúng lúc (đã qua >= nửa khoảng giãn) đẩy ghi chú lên bậc kế tiếp: 1 → 3 → 7 → 16 → 35 → 80 → 180 → 365 ngày.
   // Mở lại quá sớm chỉ ghi nhận "vừa dùng", không lên bậc. Bỏ quên quá lâu (> 4 lần khoảng giãn) thì lùi 1 bậc
   // ("use it or lose it"; tối thiểu bậc 2 để lần đọc này vẫn được tính). Nút random ưu tiên ghi chú đến hạn,
-  // xen ghi chú chưa xem để dần phủ hết wiki; tồn đọng càng nhiều thì càng ít nạp ghi chú mới (như giới hạn thẻ mới của Anki).
+  // cách chọn xem phần "ngẫu nhiên" bên dưới.
   // Lưu trong localStorage nên mỗi thiết bị/trình duyệt có lịch riêng.
   var MEMORY_KEY = "tl-memory"
   var DAY = 86400000
   var INTERVALS = [1, 3, 7, 16, 35, 80, 180, 365]
   var USE_MIN_MS = 8000
-  var NEW_SHARE_MAX = 0.3
-  var NEW_SHARE_MIN = 0.1
-  var DUE_COMFORT = 30
   var memo = null
 
   function memLoad() {
@@ -611,6 +609,7 @@
     if (useTimer) clearTimeout(useTimer)
     var slug = currentSlug()
     if (isExcluded(slug)) return
+    pushTrail(slug)
     useTimer = setTimeout(function () {
       useTimer = null
       if (currentSlug() === slug) recordUse(slug)
@@ -645,8 +644,128 @@
     return { due: due, fresh: fresh, total: slugs.length }
   }
 
-  // ---------- ngẫu nhiên ----------
-  // Chọn ngẫu nhiên, ưu tiên ghi chú chưa xem trong phiên. Không ghi lịch sử (xem markSeen).
+  // ---------- ngẫu nhiên: ôn đúng lúc, đi theo liên kết, sang chủ đề khác ----------
+  // Mỗi lần bấm chọn MỘT chế độ (khoảng 20 lần bấm ≈ 12 ôn · 4 kết nối · 2 liên ngành · 2 khám phá):
+  //   ôn          ghi chú đến hạn theo đường cong lãng quên; ưu tiên ghi chú gần thứ đang đọc
+  //   kết nối     ghi chú liên quan tới vài ghi chú vừa đọc nhưng CHƯA liên kết (Adamic–Adar, đồng trích dẫn,
+  //               Cosine) hoặc hàng xóm trực tiếp lâu chưa đọc
+  //   liên ngành  cụm (Louvain) ít gặp gần đây, ưu tiên ghi chú cầu nối (Betweenness cao)
+  //   khám phá    ghi chú chưa xem bao giờ, hoặc lâu chưa gặp
+  // Đọc 4 ghi chú liền trong cùng một cụm thì lần sau bắt buộc sang cụm khác (thoát "bong bóng").
+  // Tồn đọng (ghi chú đến hạn) càng nhiều thì càng dành nhiều lượt để ôn và càng ít nạp ghi chú mới (như Anki);
+  // ngay cả lượt kết nối / liên ngành cũng ưu tiên ghi chú đến hạn trong vùng của nó, để không đánh đổi trí nhớ.
+  // Dữ liệu quan hệ tính sẵn lúc build (scripts/build-related.mjs, trường "tl" trong contentIndex), nên chọn rất nhanh.
+  // Mọi chế độ chỉ chọn trong danh sách ứng viên, tức là gói gọn trong điều kiện tìm kiếm đang dùng.
+  var MODE_SHARE = [
+    ["review", 0.6],
+    ["connect", 0.2],
+    ["bridge", 0.1],
+    ["explore", 0.1],
+  ]
+  var STREAK_LIMIT = 4
+  var BACKLOG_FULL = 40 // từ mức tồn đọng này, gần như chỉ ôn
+
+  // 0 (không tồn đọng) → 1 (tồn đọng nhiều)
+  function pressureOf(dueCount) {
+    return Math.min(1, dueCount / BACKLOG_FULL)
+  }
+
+  // Trọng số theo trạng thái ghi nhớ: đến hạn > chưa xem (giảm khi tồn đọng) > vừa ôn.
+  function needWeight(r, now, pressure) {
+    if (!r) return 1.5 * (1 - 0.85 * pressure)
+    if (r[2] <= now) return 3
+    return 0.4
+  }
+  var TRAIL_KEY = "tl-trail"
+  var WHY_KEY = "tl-why"
+  var REL_TEXT = ["có liên kết trực tiếp", "có hàng xóm chung", "thường được dẫn cùng nhau", "nội dung tương đồng, nên đối chiếu"]
+  var G = null
+  var whyOf = {}
+  var commLabel = {}
+
+  function buildGraph(data) {
+    if (G) return G
+    var keys = Object.keys(data)
+    var idx = new Map()
+    keys.forEach(function (k, i) {
+      idx.set(k, i)
+    })
+    G = {
+      keys: keys,
+      idx: idx,
+      tl: keys.map(function (k) {
+        return (data[k] && data[k].tl) || null
+      }),
+      title: keys.map(function (k) {
+        return String((data[k] && data[k].title) || k)
+      }),
+      fp: keys.map(function (k) {
+        return String((data[k] && data[k].filePath) || "")
+      }),
+    }
+    return G
+  }
+
+  function readTrail() {
+    try {
+      return JSON.parse(sessionStorage.getItem(TRAIL_KEY) || "[]")
+    } catch (e) {
+      return []
+    }
+  }
+
+  function pushTrail(slug) {
+    var t = readTrail().filter(function (s) {
+      return s !== slug
+    })
+    t.push(slug)
+    try {
+      sessionStorage.setItem(TRAIL_KEY, JSON.stringify(t.slice(-12)))
+    } catch (e) {}
+  }
+
+  function commOf(slug) {
+    if (!G) return -1
+    var i = G.idx.get(slug)
+    var t = i === undefined ? null : G.tl[i]
+    return t ? t.c : -1
+  }
+
+  // Tên cụm = thư mục chiếm đa số trong cụm (Louvain không tự đặt tên chủ đề).
+  function labelOf(c) {
+    if (commLabel[c] !== undefined) return commLabel[c]
+    var count = {}
+    G.tl.forEach(function (t, i) {
+      if (!t || t.c !== c) return
+      var parts = G.fp[i].split("/")
+      var f = parts.length > 1 ? parts[parts.length - 2] : ""
+      if (f) count[f] = (count[f] || 0) + 1
+    })
+    var best = ""
+    Object.keys(count).forEach(function (f) {
+      if (!best || count[f] > count[best]) best = f
+    })
+    return (commLabel[c] = best.replace(/^\d+\s*-\s*/, ""))
+  }
+
+  function pickMode(trail, pressure) {
+    var cs = trail.slice(-STREAK_LIMIT).map(commOf)
+    if (cs.length >= STREAK_LIMIT && cs[0] !== -1 && cs.every(function (c) {
+      return c === cs[0]
+    }))
+      return "bridge"
+    // Tồn đọng nhiều: phần "ôn" tăng từ 60% lên tới 85%, ba chế độ còn lại co lại theo tỉ lệ.
+    var review = MODE_SHARE[0][1] + (0.85 - MODE_SHARE[0][1]) * pressure
+    var rest = (1 - review) / (1 - MODE_SHARE[0][1])
+    var r = Math.random()
+    for (var i = 0; i < MODE_SHARE.length; i++) {
+      r -= i === 0 ? review : MODE_SHARE[i][1] * rest
+      if (r <= 0) return MODE_SHARE[i][0]
+    }
+    return "review"
+  }
+
+  // Chọn ghi chú cho lần bấm tới; lý do được lưu vào whyOf[slug] để hiện sau khi mở.
   function choose(slugs, here) {
     var seen = readSeen()
     var cands = slugs.filter(function (s) {
@@ -660,28 +779,153 @@
     if (cands.length === 0) return null
     var now = Date.now()
     var m = memLoad()
-    var due = []
-    var fresh = []
-    var later = []
+    var inC = new Set(cands)
+    var trail = readTrail()
+    if (here && trail[trail.length - 1] !== here) trail.push(here)
+    var dueCount = 0
     cands.forEach(function (s) {
-      var r = m[s]
-      if (!r) fresh.push(s)
-      else if (r[2] <= now) due.push(s)
-      else later.push(s)
+      if (m[s] && m[s][2] <= now) dueCount++
     })
-    // Quá hạn càng lâu (so với khoảng giãn của bậc đó) càng dễ được chọn.
-    function overdue(s) {
-      var r = m[s]
-      return 1 + (now - r[2]) / (stepDays(r[0]) * DAY)
+    var pressure = pressureOf(dueCount)
+    var mode = G ? pickMode(trail, pressure) : "review"
+    var order = [mode, "review", "connect", "explore", "bridge"]
+    for (var k = 0; k < order.length; k++) {
+      var got = pickBy(order[k], cands, inC, trail, here, m, now, pressure)
+      if (got) {
+        whyOf[got[0]] = got[1]
+        return got[0]
+      }
     }
-    // Tỉ lệ nạp ghi chú mới: 30% khi tồn đọng ít, giảm dần khi tồn đọng nhiều, không dưới 10%.
-    var newShare = Math.min(NEW_SHARE_MAX, Math.max(NEW_SHARE_MIN, (NEW_SHARE_MAX * DUE_COMFORT) / Math.max(due.length, 1)))
-    if (due.length && (!fresh.length || Math.random() >= newShare)) return weightedPick(due, overdue)
-    if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)]
-    // Chưa có gì đến hạn: ưu tiên ghi chú sắp đến hạn (sắp bị quên).
-    return weightedPick(later, function (s) {
-      return 1 / (1 + (m[s][2] - now) / DAY)
+    var any = cands[Math.floor(Math.random() * cands.length)]
+    whyOf[any] = "Ngẫu nhiên"
+    return any
+  }
+
+  function daysAgo(r, now) {
+    return Math.round((now - r[1]) / DAY)
+  }
+
+  function pickBy(mode, cands, inC, trail, here, m, now, pressure) {
+    var hereC = commOf(here)
+    if (mode === "review") {
+      var due = cands.filter(function (s) {
+        return m[s] && m[s][2] <= now
+      })
+      if (!due.length) return null
+      // Gần thứ đang đọc (cùng cụm) được ưu tiên gấp đôi, để việc ôn liền mạch.
+      var s = weightedPick(due, function (x) {
+        var r = m[x]
+        var w = 1 + (now - r[2]) / (stepDays(r[0]) * DAY)
+        return commOf(x) === hereC && hereC !== -1 ? w * 2 : w
+      })
+      return [s, "Ôn lại · đọc lần cuối " + daysAgo(m[s], now) + " ngày trước"]
+    }
+    if (mode === "connect") {
+      if (!G) return null
+      var score = new Map()
+      var from = new Map()
+      var ctx = trail.slice(-3)
+      ctx.forEach(function (src, pos) {
+        var i = G.idx.get(src)
+        var t = i === undefined ? null : G.tl[i]
+        if (!t) return
+        var wCtx = pos === ctx.length - 1 ? 1 : 0.5
+        var add = function (j, kind, w) {
+          var s = G.keys[j]
+          if (!inC.has(s)) return
+          var r = m[s]
+          if (r && now - r[1] < 2 * DAY) return // vừa đọc thì để lần khác
+          var v = w * wCtx * needWeight(r, now, pressure)
+          if (v > (score.get(s) || 0)) {
+            score.set(s, v)
+            from.set(s, [src, kind])
+          }
+        }
+        t.r.forEach(function (x) {
+          add(x[0], x[1], x[1] === 3 ? 1.5 : 1.2)
+        })
+        t.n.forEach(function (j) {
+          add(j, 0, 0.8)
+        })
+      })
+      if (!score.size) return null
+      var list = Array.from(score.keys())
+      var s2 = weightedPick(list, function (x) {
+        return score.get(x)
+      })
+      var f = from.get(s2)
+      var srcTitle = G.title[G.idx.get(f[0])]
+      return [s2, "Liên quan tới «" + srcTitle + "»: " + REL_TEXT[f[1]]]
+    }
+    if (mode === "bridge") {
+      if (!G) return null
+      var recent = new Set(trail.slice(-8).map(commOf))
+      var byC = new Map()
+      cands.forEach(function (s) {
+        var c = commOf(s)
+        if (c === -1 || recent.has(c)) return
+        if (!byC.has(c)) byC.set(c, [])
+        byC.get(c).push(s)
+      })
+      if (!byC.size) return null
+      // Cụm có nhiều ghi chú chưa xem / đến hạn dễ được chọn hơn.
+      var cs = Array.from(byC.keys())
+      var c = weightedPick(cs, function (x) {
+        var l = byC.get(x)
+        var need = l.filter(function (s) {
+          return !m[s] || m[s][2] <= now
+        }).length
+        return Math.sqrt(l.length) * (0.2 + need / l.length)
+      })
+      var s3 = weightedPick(byC.get(c), function (x) {
+        var t = G.tl[G.idx.get(x)]
+        var r = m[x]
+        return (5 + (t ? t.b : 0)) * needWeight(r, now, pressure)
+      })
+      return [s3, "Sang cụm khác: " + (labelOf(c) || "chủ đề mới")]
+    }
+    // khám phá
+    var fresh = cands.filter(function (s) {
+      return !m[s]
     })
+    if (fresh.length && Math.random() >= pressure * 0.7)
+      return [fresh[Math.floor(Math.random() * fresh.length)], "Khám phá · chưa đọc bao giờ"]
+    cands = cands.filter(function (x) {
+      return m[x]
+    })
+    if (!cands.length) return null
+    var old = weightedPick(cands, function (x) {
+      return 1 + (now - m[x][1]) / DAY
+    })
+    return [old, "Khám phá · lâu chưa gặp (" + daysAgo(m[old], now) + " ngày)"]
+  }
+
+  // Hiện lý do chọn trong vài giây sau khi mở ghi chú bằng nút Ngẫu nhiên (không có nút bấm nào).
+  function setWhy(slug) {
+    try {
+      if (whyOf[slug]) sessionStorage.setItem(WHY_KEY, JSON.stringify({ s: slug, w: whyOf[slug] }))
+    } catch (e) {}
+  }
+
+  function showWhy() {
+    var w = null
+    try {
+      w = JSON.parse(sessionStorage.getItem(WHY_KEY) || "null")
+      sessionStorage.removeItem(WHY_KEY)
+    } catch (e) {}
+    var old = document.getElementById("tl-why")
+    if (old) old.remove()
+    if (!w || w.s !== currentSlug()) return
+    var n = el("div", "tl-why", w.w)
+    n.id = "tl-why"
+    n.setAttribute("role", "status")
+    document.body.appendChild(n)
+    setTimeout(function () {
+      n.classList.add("is-out")
+    }, 4000)
+    setTimeout(function () {
+      n.remove()
+    }, 4600)
   }
 
   // Lịch sử tự cắt còn MAX_HISTORY mục; khi mọi ứng viên đều đã xem, choose() tự bỏ qua lịch sử.
@@ -775,6 +1019,7 @@
   async function loadSlugs() {
     if (allSlugs) return allSlugs
     var data = (await loadIndex()) || {}
+    buildGraph(data)
     allSlugs = Object.keys(data).filter(function (s) {
       return !isExcluded(s)
     })
@@ -826,6 +1071,7 @@
       nextPick = null
       if (!target) return all.length ? "Chỉ có 1 ghi chú và bạn đang xem nó rồi." : "Không có ghi chú nào khớp."
       markSeen(target)
+      setWhy(target)
       go(target)
       return null
     }
@@ -845,6 +1091,7 @@
     nextPick = null
     nextPickScope = null
     if (!target) return "Chỉ có 1 ghi chú khớp và bạn đang xem nó rồi."
+    setWhy(target)
     go(target)
     return null
   }
@@ -1485,6 +1732,7 @@
     showPageCode()
     linkReleaseNotes()
     trackUse()
+    showWhy()
     mountFab()
     refreshScopeChip()
     document.querySelectorAll(".search-space").forEach(ensureSearch)
@@ -1503,8 +1751,9 @@
     memory: function () {
       return memLoad()
     },
-    choose: async function (now) {
-      return choose(await loadSlugs(), currentSlug())
+    choose: async function () {
+      var s = choose(await loadSlugs(), currentSlug())
+      return { slug: s, why: whyOf[s] }
     },
     needsAdvanced: needsAdvanced,
     fold: fold,

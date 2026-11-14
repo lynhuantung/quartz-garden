@@ -1255,3 +1255,24 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
 @media (max-width: 600px) {
   .note-properties .note-properties-key { width: 5.5rem; }
 }
+
+// Lý do nút Ngẫu nhiên chọn ghi chú này (tự ẩn sau 4 giây)
+.tl-why {
+  position: fixed;
+  left: 1rem;
+  right: 5.5rem;
+  bottom: 1.4rem;
+  z-index: 60;
+  max-width: 34rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--darkgray);
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  &.is-out { opacity: 0; }
+}

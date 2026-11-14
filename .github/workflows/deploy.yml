@@ -61,6 +61,9 @@ jobs:
       - name: Gắn nút Ghi chú ngẫu nhiên vào mọi trang
         run: node scripts/inject-random-note.mjs
 
+      - name: Tính quan hệ ghi chú cho nút Ngẫu nhiên (gắn vào contentIndex trước khi mã hóa)
+        run: node scripts/build-related.mjs
+
       - name: Mã hóa AES-256-GCM & gắn cổng đăng nhập GitHub Private
         run: node scripts/protect-site.mjs
         env:
