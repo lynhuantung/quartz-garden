@@ -8,6 +8,10 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.15-5 · 15/11/2026
+- Điện thoại: nút Ngẫu nhiên thành tab ở mép phải, ngang tầm ngón cái, bấm liên tục không phải đổi ngón.
+- Giữ và kéo nút lên hoặc xuống để đặt đúng chỗ tay mình hay để; trình duyệt nhớ vị trí này.
+
 ## 2026.11.15-4 · 15/11/2026
 - Tìm thư mục không cần nhớ đúng tên: gõ vài chữ bất kỳ, không cần dấu, không cần đúng thứ tự, sai một chữ vẫn ra (vd /toyota phuong, /feyman).
 

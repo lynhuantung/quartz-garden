@@ -959,27 +959,37 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
     color: #ef4444;
   }
 
-  // Điện thoại: nút tròn 52px màu nhấn, nổi rõ trên nền tối lẫn sáng, chừa vùng vuốt của hệ điều hành.
+  // Điện thoại: tab áp mép phải, ngang tầm ngón cái tay phải (mặc định 60% chiều cao, kéo lên/xuống được,
+  // vị trí lưu ở --tl-fab-top). Chỉ lấn khoảng 30px vào mép phải nên ít che chữ.
   @media all and not ($desktop) {
-    right: 1rem;
-    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-    width: 56px;
-    height: 56px;
-    padding: 0;
+    top: var(--tl-fab-top, 60vh);
+    bottom: auto;
+    right: 0;
+    width: 46px;
+    height: 60px;
+    padding: 0 0 0 4px;
     justify-content: center;
     border: none;
+    border-radius: 30px 0 0 30px;
     background: var(--secondary);
     color: var(--light);
-    box-shadow:
-      0 6px 18px rgba(0, 0, 0, 0.35),
-      0 0 0 3px color-mix(in srgb, var(--light) 70%, transparent);
+    box-shadow: -3px 4px 14px rgba(0, 0, 0, 0.3);
+    touch-action: none;
+    transform: translateY(-50%);
     svg {
       width: 24px;
       height: 24px;
     }
     &:hover {
       background: var(--secondary);
-      transform: none;
+      transform: translateY(-50%);
+    }
+    &:active {
+      transform: translateY(-50%) scale(0.96);
+    }
+    &.is-dragging {
+      transition: none;
+      box-shadow: -4px 6px 22px rgba(0, 0, 0, 0.45);
     }
     .tl-random-label {
       display: none;
@@ -987,7 +997,7 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   }
 }
 
-// Ẩn khi đang vuốt xuống đọc (search-plus.js bindFabScroll), trượt ra khỏi mép dưới màn hình.
+// Ẩn khi đang cuộn xuống đọc (search-plus.js bindFabScroll): máy tính trượt xuống dưới, điện thoại trượt vào mép phải.
 .tl-random-btn,
 .tl-random-scope {
   transition:
@@ -1002,11 +1012,12 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   opacity: 0;
   pointer-events: none;
 }
-
-// Điện thoại: chừa chỗ cuối trang để nút nổi không che dòng chữ cuối cùng.
 @media all and not ($desktop) {
-  body {
-    padding-bottom: 5rem;
+  .tl-random-btn.is-hidden {
+    transform: translate(110%, -50%);
+  }
+  .tl-random-scope.is-hidden {
+    transform: translateX(200%);
   }
 }
 
@@ -1245,8 +1256,9 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
     background: #ef4444;
   }
   @media all and not ($desktop) {
-    right: calc(1rem - 4px);
-    bottom: calc(1rem + 42px + env(safe-area-inset-bottom, 0px));
+    right: 6px;
+    top: calc(var(--tl-fab-top, 60vh) - 40px);
+    bottom: auto;
   }
 }
 

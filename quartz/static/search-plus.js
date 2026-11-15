@@ -1392,9 +1392,10 @@
     btn.type = "button"
     btn.className = "tl-random-btn"
     btn.setAttribute("aria-label", "Mở ghi chú ngẫu nhiên")
-    btn.title = "Mở ghi chú ngẫu nhiên (muốn lọc theo #tag, /thư-mục: dùng ô tìm kiếm Ctrl+K)"
+    btn.title = "Mở ghi chú ngẫu nhiên (điện thoại: giữ và kéo lên/xuống để đổi chỗ nút; lọc theo #tag, /thư-mục: dùng ô tìm kiếm)"
     btn.innerHTML = DICE_SVG + '<span class="tl-random-label">Ngẫu nhiên</span>'
     btn.addEventListener("click", async function () {
+      if (btn.__dragEnd && Date.now() - btn.__dragEnd < 400) return
       if (btn.dataset.busy === "1") return
       btn.dataset.busy = "1"
       btn.classList.add("is-spinning")
@@ -1410,8 +1411,67 @@
         }, 150)
       }
     })
+    loadFabTop()
+    bindFabDrag(btn)
     document.body.appendChild(btn)
     refreshScopeChip()
+  }
+
+  // Điện thoại: giữ và kéo nút lên/xuống tới chỗ ngón cái hay đặt; vị trí lưu trong trình duyệt này.
+  var FAB_TOP_KEY = "tl-fab-top"
+  function applyFabTop(f) {
+    document.documentElement.style.setProperty("--tl-fab-top", (f * 100).toFixed(1) + "vh")
+  }
+  function loadFabTop() {
+    try {
+      var f = parseFloat(localStorage.getItem(FAB_TOP_KEY))
+      if (f >= 0.15 && f <= 0.88) applyFabTop(f)
+    } catch (e) {}
+  }
+  function bindFabDrag(btn) {
+    var mq = window.matchMedia("(max-width: 1199px)")
+    var startY = 0
+    var startMid = 0
+    var pid = null
+    var active = false
+    var dragging = false
+    btn.addEventListener("pointerdown", function (e) {
+      if (!mq.matches) return
+      var r = btn.getBoundingClientRect()
+      active = true
+      dragging = false
+      pid = e.pointerId
+      startY = e.clientY
+      startMid = r.top + r.height / 2
+    })
+    btn.addEventListener("pointermove", function (e) {
+      if (!active || e.pointerId !== pid) return
+      var dy = e.clientY - startY
+      if (!dragging && Math.abs(dy) > 10) {
+        dragging = true
+        btn.classList.add("is-dragging")
+        try {
+          btn.setPointerCapture(pid)
+        } catch (err) {}
+      }
+      if (dragging) {
+        btn.__f = Math.min(0.88, Math.max(0.15, (startMid + dy) / window.innerHeight))
+        applyFabTop(btn.__f)
+      }
+    })
+    var end = function () {
+      if (!active) return
+      active = false
+      if (!dragging) return
+      dragging = false
+      btn.classList.remove("is-dragging")
+      btn.__dragEnd = Date.now()
+      try {
+        localStorage.setItem(FAB_TOP_KEY, String(btn.__f))
+      } catch (err) {}
+    }
+    btn.addEventListener("pointerup", end)
+    btn.addEventListener("pointercancel", end)
   }
 
   // ---------- tìm kiếm nâng cao ----------
