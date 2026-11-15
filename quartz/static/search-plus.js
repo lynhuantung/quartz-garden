@@ -1418,7 +1418,8 @@
   }
 
   // Điện thoại: giữ và kéo nút lên/xuống tới chỗ ngón cái hay đặt; vị trí lưu trong trình duyệt này.
-  var FAB_TOP_KEY = "tl-fab-top"
+  // v2: đổi khóa khi đổi vị trí mặc định, để vị trí kéo theo mặc định cũ không đè lên mặc định mới.
+  var FAB_TOP_KEY = "tl-fab-top-v2"
   function applyFabTop(f) {
     document.documentElement.style.setProperty("--tl-fab-top", (f * 100).toFixed(1) + "vh")
   }

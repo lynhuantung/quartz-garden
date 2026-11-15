@@ -959,10 +959,10 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
     color: #ef4444;
   }
 
-  // Điện thoại: tab áp mép phải, ngang tầm ngón cái tay phải (mặc định 60% chiều cao, kéo lên/xuống được,
+  // Điện thoại: tab áp mép phải, ngang tầm ngón cái tay phải (mặc định 60vh - 240px, tức cao hơn ~4 cm trên A23; kéo lên/xuống được,
   // vị trí lưu ở --tl-fab-top). Chỉ lấn khoảng 30px vào mép phải nên ít che chữ.
   @media all and not ($desktop) {
-    top: var(--tl-fab-top, 60vh);
+    top: var(--tl-fab-top, calc(60vh - 240px));
     bottom: auto;
     right: 0;
     width: 46px;
@@ -1257,7 +1257,7 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   }
   @media all and not ($desktop) {
     right: 6px;
-    top: calc(var(--tl-fab-top, 60vh) - 40px);
+    top: calc(var(--tl-fab-top, calc(60vh - 240px)) - 40px);
     bottom: auto;
   }
 }

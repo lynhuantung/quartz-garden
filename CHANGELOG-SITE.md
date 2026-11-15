@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.15-6 · 15/11/2026
+- Điện thoại: nút Ngẫu nhiên dời lên cao hơn khoảng 4 cm.
+
 ## 2026.11.15-5 · 15/11/2026
 - Điện thoại: nút Ngẫu nhiên thành tab ở mép phải, ngang tầm ngón cái, bấm liên tục không phải đổi ngón.
 - Giữ và kéo nút lên hoặc xuống để đặt đúng chỗ tay mình hay để; trình duyệt nhớ vị trí này.
