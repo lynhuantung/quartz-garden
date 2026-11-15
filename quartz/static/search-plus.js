@@ -759,7 +759,7 @@
   }
   var TRAIL_KEY = "tl-trail"
   var WHY_KEY = "tl-why"
-  var REL_TEXT = ["hai ghi chú có liên kết với nhau", "cả hai cùng liên kết tới vài ghi chú chung", "thường được ghi chú khác nhắc tới cùng lúc", "nội dung na ná nhau, nên đọc để so sánh"]
+  var REL_TEXT = ["hai ghi chú có liên kết trực tiếp với nhau", "hai ghi chú cùng liên kết đến một số ghi chú chung", "hai ghi chú thường được trích dẫn cùng nhau", "hai ghi chú có nội dung tương đồng, nên đọc đối chiếu"]
   var G = null
   var whyOf = {}
   var commLabel = {}
@@ -878,7 +878,7 @@
       }
     }
     var any = cands[Math.floor(Math.random() * cands.length)]
-    whyOf[any] = "Chọn ngẫu nhiên một ghi chú bất kỳ."
+    whyOf[any] = "Ghi chú được chọn ngẫu nhiên."
     return any
   }
 
@@ -904,7 +904,7 @@
         var w = 1 + (now - r[2]) / (stepDays(r[0]) * DAY)
         return commOf(x) === hereC && hereC !== -1 ? w * 2 : w
       })
-      return [s, "Đến lúc ôn lại: bạn đọc ghi chú này lần cuối " + agoText(daysAgo(m[s], now)) + ", ôn bây giờ để khỏi quên."]
+      return [s, "Đến hạn ôn tập: lần đọc gần nhất là " + agoText(daysAgo(m[s], now)) + ". Ôn lại lúc này giúp ghi nhớ lâu hơn."]
     }
     if (mode === "connect") {
       if (!G) return null
@@ -941,7 +941,7 @@
       })
       var f = from.get(s2)
       var srcTitle = G.title[G.idx.get(f[0])]
-      return [s2, "Liên quan tới «" + srcTitle + "» bạn vừa đọc: " + REL_TEXT[f[1]] + "."]
+      return [s2, "Liên quan đến «" + srcTitle + "» vừa đọc: " + REL_TEXT[f[1]] + "."]
     }
     if (mode === "bridge") {
       if (!G) return null
@@ -968,14 +968,14 @@
         var r = m[x]
         return (5 + (t ? t.b : 0)) * needWeight(r, now, pressure)
       })
-      return [s3, labelOf(c) ? "Đổi gió sang chủ đề khác: «" + labelOf(c) + "»." : "Đổi gió sang một chủ đề khác."]
+      return [s3, labelOf(c) ? "Chuyển sang chủ đề khác: «" + labelOf(c) + "», giúp mở rộng liên kết giữa các mảng kiến thức." : "Chuyển sang một chủ đề khác, giúp mở rộng liên kết giữa các mảng kiến thức."]
     }
     // khám phá
     var fresh = cands.filter(function (s) {
       return !m[s]
     })
     if (fresh.length && Math.random() >= pressure * 0.7)
-      return [fresh[Math.floor(Math.random() * fresh.length)], "Ghi chú bạn chưa đọc lần nào."]
+      return [fresh[Math.floor(Math.random() * fresh.length)], "Ghi chú chưa được đọc lần nào."]
     cands = cands.filter(function (x) {
       return m[x]
     })
@@ -983,7 +983,7 @@
     var old = weightedPick(cands, function (x) {
       return 1 + (now - m[x][1]) / DAY
     })
-    return [old, "Đọc lại cho nhớ: bạn mở ghi chú này lần cuối " + agoText(daysAgo(m[old], now)) + "."]
+    return [old, "Đọc lại để củng cố trí nhớ: lần đọc gần nhất là " + agoText(daysAgo(m[old], now)) + "."]
   }
 
   // Hiện lý do chọn trong vài giây sau khi mở ghi chú bằng nút Ngẫu nhiên (không có nút bấm nào).
@@ -1003,7 +1003,14 @@
     } catch (e) {}
     var old = document.getElementById("tl-why")
     if (old) old.remove()
-    if (!w || w.s !== currentSlug()) return
+    var dec = function (x) {
+      try {
+        return decodeURIComponent(x)
+      } catch (e) {
+        return x
+      }
+    }
+    if (!w || dec(w.s) !== dec(currentSlug())) return
     // Đặt lý do ngay dưới tiêu đề, nằm trong dòng chữ: không che nội dung, đọc lúc nào cũng được.
     var h = document.querySelector(".center .article-title") || document.querySelector(".article-title")
     if (!h) return showTip(w.w)
