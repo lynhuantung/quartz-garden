@@ -987,6 +987,8 @@
   }
 
   // Hiện lý do chọn trong vài giây sau khi mở ghi chú bằng nút Ngẫu nhiên (không có nút bấm nào).
+  var WHY_MS = 15000
+
   function setWhy(slug) {
     try {
       if (whyOf[slug]) sessionStorage.setItem(WHY_KEY, JSON.stringify({ s: slug, w: whyOf[slug], t: Date.now() }))
