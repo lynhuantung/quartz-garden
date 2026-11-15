@@ -330,7 +330,7 @@
       for (var i = 1; i <= parts.length; i++) {
         var label = parts.slice(0, i).join("/")
         var key = fold(label).replace(/\s+/g, "-")
-        if (!folders[key]) folders[key] = { key: key, label: label, count: 0, depth: i, segs: pathSegs(label) }
+        if (!folders[key]) folders[key] = { key: key, label: label, count: 0, depth: i, segs: pathSegs(label), like: likeHay(label) }
         folders[key].count++
       }
       entries.push({
@@ -346,6 +346,7 @@
         dirDisp: dirDisp,
         dirN: fold(dirDisp).replace(/\s+/g, "-"),
         dirSegs: pathSegs(dirDisp),
+        dirLike: likeHay(dirDisp),
         code: codeFromName(fp.split("/").pop() || slug.split("/").pop()),
         links: links,
         orphan: false,
@@ -434,7 +435,10 @@
     if (!v) return null
     c.disp = v
     if (c.type === "folder" || c.type === "links") c.value = fold(v).replace(/\s+/g, "-").replace(/\/+$/, "")
-    if (c.type === "folder") c.segs = pathSegs(v.replace(/\/+$/, ""))
+    if (c.type === "folder") {
+      c.segs = pathSegs(v.replace(/\/+$/, ""))
+      c.words = likeWords(v)
+    }
     if (c.type === "code") c.value = fold(v).replace(/-/g, "/").replace(/\s+/g, "")
     else c.value = normSpace(v)
     return c
@@ -533,6 +537,64 @@
     })
   }
 
+  // ---------- tìm thư mục kiểu LIKE ----------
+  // Không cần nhớ đúng tên: mỗi từ gõ vào chỉ cần nằm đâu đó trong đường dẫn (không theo thứ tự, không dấu),
+  // từ dài >= 4 ký tự được phép sai 1 chữ. "/toyota phuong", "/phuongthuc", "/feyman" đều ra thư mục đúng.
+  function likeWords(s) {
+    return fold(s)
+      .split(/[\s\/\-_.–—,:;()\[\]'"]+/)
+      .filter(Boolean)
+  }
+
+  function likeHay(path) {
+    var w = likeWords(path)
+    return { words: w, compact: w.join("") }
+  }
+
+  // Khoảng cách sửa (thêm/bớt/thay/đảo 2 chữ kề nhau) có <= 1 không.
+  function edit1(a, b) {
+    if (a === b) return true
+    var la = a.length
+    var lb = b.length
+    if (Math.abs(la - lb) > 1) return false
+    var i = 0
+    while (i < la && i < lb && a.charAt(i) === b.charAt(i)) i++
+    if (la === lb) {
+      if (a.slice(i + 1) === b.slice(i + 1)) return true
+      return a.charAt(i) === b.charAt(i + 1) && a.charAt(i + 1) === b.charAt(i) && a.slice(i + 2) === b.slice(i + 2)
+    }
+    return la > lb ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1)
+  }
+
+  // 0 = không khớp, 1 = khớp đúng (chuỗi con), 2 = khớp gần đúng (sai 1 chữ).
+  function likeWord(q, hay) {
+    if (q.length < 3) {
+      return hay.words.some(function (w) {
+        return w.indexOf(q) === 0
+      })
+        ? 1
+        : 0
+    }
+    if (hay.compact.indexOf(q) !== -1) return 1
+    if (q.length < 4) return 0
+    return hay.words.some(function (w) {
+      return edit1(q, w) || (w.length > q.length && edit1(q, w.slice(0, q.length))) || edit1(q, w.slice(0, q.length + 1))
+    })
+      ? 2
+      : 0
+  }
+
+  function likeScore(hay, qws) {
+    if (!hay || !qws || !qws.length) return 0
+    var worst = 1
+    for (var i = 0; i < qws.length; i++) {
+      var r = likeWord(qws[i], hay)
+      if (!r) return 0
+      if (r > worst) worst = r
+    }
+    return worst
+  }
+
   function matchCond(e, c) {
     var r
     if (c.type === "tag") {
@@ -544,7 +606,8 @@
         startsPath(e.slugN, c.value) ||
         startsPath(e.dirN, c.value) ||
         folderAnywhere(e.dirN, c.value) ||
-        segMatch(e.dirSegs, c.segs) !== -1
+        segMatch(e.dirSegs, c.segs) !== -1 ||
+        likeScore(e.dirLike, c.words) > 0
     } else if (c.type === "code") {
       r = codeMatch(e.code, c.value)
     } else if (c.type === "links") {
@@ -1368,22 +1431,48 @@
   }
 
   function folderSuggestions(q) {
-    if (!q || /\s$/.test(q)) return []
+    if (!q) return []
     var tokens = tokenize(q)
-    var last = tokens[tokens.length - 1] || ""
-    var neg = last.charAt(0) === "-"
-    var body = neg ? last.slice(1) : last
-    if (body.charAt(0) !== "/") return []
+    // Tìm token thư mục cuối cùng; các từ thường gõ tiếp sau nó (không ngoặc kép) cũng dùng để gợi ý,
+    // nên gõ "/phuong toyota" vẫn ra "Books/08 - Phương thức Toyota".
+    var fi = -1
+    for (var t = tokens.length - 1; t >= 0; t--) {
+      var tb = tokens[t].charAt(0) === "-" ? tokens[t].slice(1) : tokens[t]
+      if (tb.charAt(0) === "/") {
+        fi = t
+        break
+      }
+    }
+    if (fi === -1) return []
+    var extra = tokens.slice(fi + 1)
+    var trailing = /\s$/.test(q)
+    var folderTok = tokens[fi]
+    if (folderTok.indexOf('"') !== -1 && (extra.length || trailing)) return []
+    if (!extra.length && trailing) return []
+    var plain = extra.every(function (x) {
+      return /^[^-#/"|:]+$/.test(x) && x !== "OR"
+    })
+    if (!plain) return []
+    var neg = folderTok.charAt(0) === "-"
+    var body = neg ? folderTok.slice(1) : folderTok
     var raw = body.slice(1).replace(/"/g, "")
     var prefix = fold(raw).replace(/\s+/g, "-")
     var qs = pathSegs(raw)
-    var endsSlash = /\/$/.test(raw)
+    var endsSlash = /\/$/.test(raw) && !extra.length
+    var qws = likeWords(raw + " " + extra.join(" "))
     var list = cache.folders
       .map(function (f) {
-        if (f.key === prefix.replace(/\/+$/, "")) return null
-        var at = segMatch(f.segs, qs)
-        if (at === -1 && f.key.indexOf(prefix) === 0) at = 0
-        else if (at === -1 && prefix.length >= 2 && f.key.indexOf(prefix) > -1) at = 99
+        if (!extra.length && f.key === prefix.replace(/\/+$/, "")) return null
+        var at = -1
+        if (!extra.length) {
+          at = segMatch(f.segs, qs)
+          if (at === -1 && f.key.indexOf(prefix) === 0) at = 0
+          else if (at === -1 && prefix.length >= 2 && f.key.indexOf(prefix) > -1) at = 99
+        }
+        if (at === -1 && !endsSlash) {
+          var ls = likeScore(f.like, qws)
+          if (ls) at = ls === 1 ? 100 : 200
+        }
         if (at === -1) return null
         // Gõ "/book/" thì chỉ gợi ý cấp con trực tiếp, không trải hết các cấp cháu.
         if (endsSlash && f.segs.length !== at + qs.length) return null
@@ -1397,13 +1486,18 @@
       .map(function (x) {
         return x.f
       })
+    var cutAt = (function () {
+      // vị trí bắt đầu token thư mục trong chuỗi q (tính từ cuối để không lệch khi có token trùng)
+      var pos = q.length
+      for (var k = tokens.length - 1; k >= fi; k--) pos = q.lastIndexOf(tokens[k], pos - 1)
+      return pos < 0 ? q.length - folderTok.length : pos
+    })()
     return list.map(function (f) {
       return {
         label: f.label,
         count: f.count,
         apply: function (st) {
-          var cut = q.length - last.length
-          st.input.value = q.slice(0, cut) + (neg ? "-" : "") + folderToken(f.label) + " "
+          st.input.value = q.slice(0, cutAt) + (neg ? "-" : "") + folderToken(f.label) + " "
           setScope(st.input.value)
           st.input.focus()
           update(st)
