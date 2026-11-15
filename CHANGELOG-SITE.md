@@ -8,6 +8,10 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.15-7 · 15/11/2026
+- Điện thoại: bấm Ngẫu nhiên mở ghi chú nhanh hơn nhiều, không còn tải lại cả trang.
+- Cây thư mục (nút ≡) chỉ được dựng khi bạn mở nó, nên chuyển trang nhẹ hơn.
+
 ## 2026.11.15-6 · 15/11/2026
 - Điện thoại: nút Ngẫu nhiên dời lên cao hơn khoảng 4 cm.
 

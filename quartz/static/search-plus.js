@@ -25,6 +25,81 @@
   if (window.__tlSearchPlusInit) return
   window.__tlSearchPlusInit = true
 
+  // ---------- điện thoại: chỉ dựng cây thư mục khi người dùng mở ----------
+  // Plugin Explorer xóa và dựng lại TOÀN BỘ cây (~2900 phần tử) sau mỗi lần chuyển trang, kể cả khi trên điện
+  // thoại cây đang đóng. Đó là phần lớn thời gian chờ khi bấm Ngẫu nhiên liên tục. Trên màn hình ≤ 800px,
+  // lớp này hoãn handler của Explorer cho tới lúc chạm nút mở cây (≡); máy tính giữ nguyên.
+  // Script này chạy trước các module của Quartz nên kịp bọc handler lúc Explorer đăng ký.
+  ;(function lazyExplorer() {
+    var mq = window.matchMedia("(max-width: 800px)")
+    var dAdd = document.addEventListener
+    var explorerFn = null
+    var pendingEvt = null
+    var running = false
+    var isExplorer = function (fn) {
+      try {
+        return /\[Explorer\]/.test(Function.prototype.toString.call(fn))
+      } catch (e) {
+        return false
+      }
+    }
+    var isOpen = function () {
+      return document.documentElement.classList.contains("mobile-no-scroll")
+    }
+    // Phần tối thiểu handler gốc làm cho điện thoại: hiện nút ≡ và để cây ở trạng thái đóng.
+    var settleClosed = function () {
+      document.querySelectorAll(".explorer").forEach(function (t) {
+        var m = t.querySelector(".mobile-explorer")
+        if (!m) return
+        m.classList.remove("hide-until-loaded")
+        if (!m.checkVisibility || m.checkVisibility()) {
+          t.classList.add("collapsed")
+          t.setAttribute("aria-expanded", "false")
+        }
+      })
+    }
+    document.addEventListener = function (type, fn, opt) {
+      if ((type === "nav" || type === "render") && typeof fn === "function" && (fn === explorerFn || (!explorerFn && isExplorer(fn)))) {
+        explorerFn = fn
+        var wrapped = function (e) {
+          if (mq.matches && !isOpen()) {
+            pendingEvt = e
+            settleClosed()
+            return
+          }
+          pendingEvt = null
+          return fn.call(this, e)
+        }
+        return dAdd.call(this, type, wrapped, opt)
+      }
+      return dAdd.call(this, type, fn, opt)
+    }
+    // Chạm nút ≡ khi cây chưa dựng: dựng cây (handler gốc tự gắn sự kiện cho nút), rồi mở như bình thường.
+    dAdd.call(
+      document,
+      "click",
+      function (e) {
+        var b = e.target && e.target.closest ? e.target.closest(".mobile-explorer") : null
+        if (!b || !pendingEvt || !explorerFn || !mq.matches) return
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        if (running) return
+        running = true
+        var ev = pendingEvt
+        pendingEvt = null
+        Promise.resolve(explorerFn.call(document, ev))
+          .catch(function (err) {
+            console.error("TL wiki: không dựng được cây thư mục", err)
+          })
+          .then(function () {
+            running = false
+            b.click()
+          })
+      },
+      true,
+    )
+  })()
+
   var BTN_ID = "tl-random-note-btn"
   var HISTORY_KEY = "tl-random-seen"
   var MAX_HISTORY = 30

@@ -1291,9 +1291,11 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
 
 // Điện thoại: ngăn Explorer khi đóng vẫn lòi 16px ở mép trái (dịch -100vw nhưng ngăn bắt đầu ở x=16),
 // và thư mục đang mở tự đặt visibility: visible nên tiêu đề dài hiện ra. Ẩn hẳn mọi thứ bên trong khi đóng.
+// content-visibility: hidden bỏ qua tính style/bố cục/vẽ cho ~2900 phần tử của cây thư mục khi đang đóng:
+// mỗi lần chuyển trang (nút Ngẫu nhiên) trên điện thoại nhanh hơn rõ rệt. Mở cây ra thì hiện lại bình thường.
 @media (max-width: 800px) {
-  .explorer.collapsed .explorer-content,
-  .explorer.collapsed .explorer-content * {
+  .explorer.collapsed .explorer-content {
+    content-visibility: hidden;
     visibility: hidden !important;
   }
 }
