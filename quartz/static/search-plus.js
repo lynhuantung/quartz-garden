@@ -989,37 +989,44 @@
   // Hiện lý do chọn trong vài giây sau khi mở ghi chú bằng nút Ngẫu nhiên (không có nút bấm nào).
   function setWhy(slug) {
     try {
-      if (whyOf[slug]) sessionStorage.setItem(WHY_KEY, JSON.stringify({ s: slug, w: whyOf[slug] }))
+      if (whyOf[slug]) sessionStorage.setItem(WHY_KEY, JSON.stringify({ s: slug, w: whyOf[slug], t: Date.now() }))
     } catch (e) {}
   }
 
-  var WHY_MS = 15000
+  function decSlug(x) {
+    try {
+      return decodeURIComponent(x)
+    } catch (e) {
+      return x
+    }
+  }
 
+  // Lý do được giữ WHY_MS kể từ lúc bấm. Lần mở đầu tiên có thể tải lại cả trang và Quartz dựng lại nội dung
+  // sau khi dòng lý do đã chèn, nên showWhy được gọi lại vài lần và tự chèn lại nếu bị mất.
   function showWhy() {
     var w = null
     try {
       w = JSON.parse(sessionStorage.getItem(WHY_KEY) || "null")
-      sessionStorage.removeItem(WHY_KEY)
     } catch (e) {}
-    var dec = function (x) {
-      try {
-        return decodeURIComponent(x)
-      } catch (e) {
-        return x
-      }
-    }
-    var here = dec(currentSlug())
+    var here = decSlug(currentSlug())
     var old = document.getElementById("tl-why")
-    // Sự kiện nav có thể phát hai lần cho cùng một trang: lần sau không được xóa dòng lý do vừa hiện.
-    if (old && (w || old.getAttribute("data-slug") !== here)) old.remove()
-    if (!w || dec(w.s) !== here) return
-    // Đặt lý do ngay dưới tiêu đề, nằm trong dòng chữ: không che nội dung, đọc lúc nào cũng được.
+    if (old && old.getAttribute("data-slug") !== here) old.remove()
+    if (!w) return
+    var left = WHY_MS - (Date.now() - (w.t || 0))
+    if (decSlug(w.s) !== here || left <= 0) {
+      try {
+        sessionStorage.removeItem(WHY_KEY)
+      } catch (e) {}
+      return
+    }
+    if (document.getElementById("tl-why")) return
     var h = document.querySelector(".center .article-title") || document.querySelector(".article-title")
-    if (!h) return showTip(w.w)
+    if (!h) return
     var n = el("div", "tl-why-inline")
     n.id = "tl-why"
     n.setAttribute("data-slug", here)
     n.setAttribute("role", "status")
+    n.style.setProperty("--tl-why-left", left + "ms")
     var ic = el("span", "tl-why-icon")
     ic.innerHTML = DICE_SVG.replace(/width="22" height="22"/, 'width="15" height="15"')
     n.appendChild(ic)
@@ -1028,17 +1035,24 @@
     x.type = "button"
     x.setAttribute("aria-label", "Ẩn lý do chọn ghi chú")
     x.addEventListener("click", function () {
+      try {
+        sessionStorage.removeItem(WHY_KEY)
+      } catch (e) {}
       n.remove()
     })
     n.appendChild(x)
     h.insertAdjacentElement("afterend", n)
-    // Tự thu gọn sau 15 giây (vạch mảnh ở đáy chạy lùi cho biết còn bao lâu).
+    // Tự thu gọn khi hết giờ (vạch mảnh ở đáy chạy lùi cho biết còn bao lâu).
     setTimeout(function () {
+      try {
+        sessionStorage.removeItem(WHY_KEY)
+      } catch (e) {}
       if (!document.contains(n)) return
       var r = n.getBoundingClientRect()
       if (r.bottom < 0) {
         // Đã cuộn qua: bỏ ngay và bù lại vị trí cuộn để chữ đang đọc không nhảy.
-        var hgt = n.offsetHeight + parseFloat(getComputedStyle(n).marginTop) + parseFloat(getComputedStyle(n).marginBottom)
+        var cs = getComputedStyle(n)
+        var hgt = n.offsetHeight + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom)
         n.remove()
         window.scrollBy(0, -hgt)
         return
@@ -1047,7 +1061,7 @@
       setTimeout(function () {
         n.remove()
       }, 450)
-    }, WHY_MS)
+    }, left)
   }
 
   // Lịch sử tự cắt còn MAX_HISTORY mục; khi mọi ứng viên đều đã xem, choose() tự bỏ qua lịch sử.
@@ -1901,6 +1915,8 @@
     linkReleaseNotes()
     trackUse()
     showWhy()
+    setTimeout(showWhy, 600)
+    setTimeout(showWhy, 1600)
     mountFab()
     setFabHidden(false)
     bindFabScroll()

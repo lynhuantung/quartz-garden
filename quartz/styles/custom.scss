@@ -1336,7 +1336,7 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
     background: var(--secondary);
     opacity: 0.45;
     transform-origin: left;
-    animation: tl-why-countdown 15s linear forwards;
+    animation: tl-why-countdown var(--tl-why-left, 15s) linear forwards;
   }
   display: flex;
   align-items: flex-start;
