@@ -1091,7 +1091,6 @@
     n.id = "tl-why"
     n.setAttribute("data-slug", here)
     n.setAttribute("role", "status")
-    n.style.setProperty("--tl-why-left", left + "ms")
     var ic = el("span", "tl-why-icon")
     ic.innerHTML = DICE_SVG.replace(/width="22" height="22"/, 'width="15" height="15"')
     n.appendChild(ic)
@@ -1107,7 +1106,7 @@
     })
     n.appendChild(x)
     h.insertAdjacentElement("afterend", n)
-    // Tự thu gọn khi hết giờ (vạch mảnh ở đáy chạy lùi cho biết còn bao lâu).
+    // Tự thu gọn khi hết giờ, không hiện đồng hồ hay vạch đếm lùi (gây phân tâm khi đọc).
     setTimeout(function () {
       try {
         sessionStorage.removeItem(WHY_KEY)

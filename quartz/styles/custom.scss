@@ -1250,15 +1250,6 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   }
 }
 
-@keyframes tl-why-countdown {
-  from {
-    transform: scaleX(1);
-  }
-  to {
-    transform: scaleX(0);
-  }
-}
-
 @keyframes tl-random-spin {
   from {
     transform: rotate(0deg);
@@ -1324,19 +1315,6 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
     margin-bottom: 0;
     padding-top: 0;
     padding-bottom: 0;
-  }
-  // Vạch đếm lùi 15 giây (khớp WHY_MS trong search-plus.js)
-  &::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    height: 2px;
-    width: 100%;
-    background: var(--secondary);
-    opacity: 0.45;
-    transform-origin: left;
-    animation: tl-why-countdown var(--tl-why-left, 15s) linear forwards;
   }
   display: flex;
   align-items: flex-start;

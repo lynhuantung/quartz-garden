@@ -11,6 +11,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 ## 2026.11.15-4 · 15/11/2026
 - Tìm thư mục không cần nhớ đúng tên: gõ vài chữ bất kỳ, không cần dấu, không cần đúng thứ tự, sai một chữ vẫn ra (vd /toyota phuong, /feyman).
 
+## 2026.11.15-4 · 15/11/2026
+- Bỏ vạch đếm lùi dưới dòng gợi ý Ngẫu nhiên cho đỡ phân tâm; gợi ý vẫn tự ẩn sau 15 giây.
+
 ## 2026.11.15-3 · 15/11/2026
 - Dòng gợi ý khi bấm Ngẫu nhiên tự ẩn sau 15 giây, không cần bấm tắt.
 - Lời gợi ý viết lại rõ nghĩa, theo ngôn từ của sách, ví dụ "Đến hạn ôn tập: lần đọc gần nhất là hôm qua".
