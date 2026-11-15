@@ -759,7 +759,7 @@
   }
   var TRAIL_KEY = "tl-trail"
   var WHY_KEY = "tl-why"
-  var REL_TEXT = ["hai ghi chú liên kết thẳng tới nhau", "cùng dẫn tới mấy ghi chú giống nhau", "hay được nhắc cùng nhau", "nội dung gần nhau, nên đọc đối chiếu"]
+  var REL_TEXT = ["hai ghi chú có liên kết với nhau", "cả hai cùng liên kết tới vài ghi chú chung", "thường được ghi chú khác nhắc tới cùng lúc", "nội dung na ná nhau, nên đọc để so sánh"]
   var G = null
   var whyOf = {}
   var commLabel = {}
@@ -878,12 +878,17 @@
       }
     }
     var any = cands[Math.floor(Math.random() * cands.length)]
-    whyOf[any] = "Ngẫu nhiên"
+    whyOf[any] = "Chọn ngẫu nhiên một ghi chú bất kỳ."
     return any
   }
 
   function daysAgo(r, now) {
     return Math.round((now - r[1]) / DAY)
+  }
+
+  // "hôm nay", "hôm qua", "3 ngày trước": dễ đọc hơn "(1 ngày)".
+  function agoText(n) {
+    return n <= 0 ? "hôm nay" : n === 1 ? "hôm qua" : n + " ngày trước"
   }
 
   function pickBy(mode, cands, inC, trail, here, m, now, pressure) {
@@ -899,7 +904,7 @@
         var w = 1 + (now - r[2]) / (stepDays(r[0]) * DAY)
         return commOf(x) === hereC && hereC !== -1 ? w * 2 : w
       })
-      return [s, "Ôn lại · đọc lần cuối " + daysAgo(m[s], now) + " ngày trước"]
+      return [s, "Đến lúc ôn lại: bạn đọc ghi chú này lần cuối " + agoText(daysAgo(m[s], now)) + ", ôn bây giờ để khỏi quên."]
     }
     if (mode === "connect") {
       if (!G) return null
@@ -936,7 +941,7 @@
       })
       var f = from.get(s2)
       var srcTitle = G.title[G.idx.get(f[0])]
-      return [s2, "Gần với «" + srcTitle + "» bạn vừa đọc: " + REL_TEXT[f[1]]]
+      return [s2, "Liên quan tới «" + srcTitle + "» bạn vừa đọc: " + REL_TEXT[f[1]] + "."]
     }
     if (mode === "bridge") {
       if (!G) return null
@@ -963,14 +968,14 @@
         var r = m[x]
         return (5 + (t ? t.b : 0)) * needWeight(r, now, pressure)
       })
-      return [s3, "Sang cụm khác: " + (labelOf(c) || "chủ đề mới")]
+      return [s3, labelOf(c) ? "Đổi gió sang chủ đề khác: «" + labelOf(c) + "»." : "Đổi gió sang một chủ đề khác."]
     }
     // khám phá
     var fresh = cands.filter(function (s) {
       return !m[s]
     })
     if (fresh.length && Math.random() >= pressure * 0.7)
-      return [fresh[Math.floor(Math.random() * fresh.length)], "Khám phá · chưa đọc bao giờ"]
+      return [fresh[Math.floor(Math.random() * fresh.length)], "Ghi chú bạn chưa đọc lần nào."]
     cands = cands.filter(function (x) {
       return m[x]
     })
@@ -978,7 +983,7 @@
     var old = weightedPick(cands, function (x) {
       return 1 + (now - m[x][1]) / DAY
     })
-    return [old, "Khám phá · lâu chưa gặp (" + daysAgo(m[old], now) + " ngày)"]
+    return [old, "Đọc lại cho nhớ: bạn mở ghi chú này lần cuối " + agoText(daysAgo(m[old], now)) + "."]
   }
 
   // Hiện lý do chọn trong vài giây sau khi mở ghi chú bằng nút Ngẫu nhiên (không có nút bấm nào).
@@ -987,6 +992,8 @@
       if (whyOf[slug]) sessionStorage.setItem(WHY_KEY, JSON.stringify({ s: slug, w: whyOf[slug] }))
     } catch (e) {}
   }
+
+  var WHY_MS = 15000
 
   function showWhy() {
     var w = null
@@ -1015,6 +1022,22 @@
     })
     n.appendChild(x)
     h.insertAdjacentElement("afterend", n)
+    // Tự thu gọn sau 15 giây (vạch mảnh ở đáy chạy lùi cho biết còn bao lâu).
+    setTimeout(function () {
+      if (!document.contains(n)) return
+      var r = n.getBoundingClientRect()
+      if (r.bottom < 0) {
+        // Đã cuộn qua: bỏ ngay và bù lại vị trí cuộn để chữ đang đọc không nhảy.
+        var hgt = n.offsetHeight + parseFloat(getComputedStyle(n).marginTop) + parseFloat(getComputedStyle(n).marginBottom)
+        n.remove()
+        window.scrollBy(0, -hgt)
+        return
+      }
+      n.classList.add("is-out")
+      setTimeout(function () {
+        n.remove()
+      }, 450)
+    }, WHY_MS)
   }
 
   // Lịch sử tự cắt còn MAX_HISTORY mục; khi mọi ứng viên đều đã xem, choose() tự bỏ qua lịch sử.

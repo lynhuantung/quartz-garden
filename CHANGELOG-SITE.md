@@ -8,6 +8,10 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.15-3 · 15/11/2026
+- Dòng gợi ý khi bấm Ngẫu nhiên tự ẩn sau 15 giây, không cần bấm tắt.
+- Lời gợi ý viết lại cho dễ hiểu, ví dụ "Đến lúc ôn lại: bạn đọc ghi chú này lần cuối hôm qua".
+
 ## 2026.11.15-2 · 15/11/2026
 - Nút Ngẫu nhiên giữ ở góc dưới phải cho dễ bấm bằng ngón cái, tự ẩn khi cuộn xuống đọc và hiện lại khi cuộn lên hoặc mở ghi chú mới.
 
