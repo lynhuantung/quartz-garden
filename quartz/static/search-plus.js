@@ -273,10 +273,23 @@
     } catch (e) {}
   }
 
+  // Bộ chuyển trang nhanh (spaNavigate) chỉ có sau khi đăng nhập và nạp xong module của Quartz (vài giây trên
+  // điện thoại). Bấm sớm mà tải lại cả trang thì router lại phải nạp từ đầu, lần bấm sau lại tải lại cả trang:
+  // vòng lặp chậm 5–15 giây mỗi lần. Vì vậy chờ router tối đa 8 giây rồi mới tải lại cả trang.
   function go(slug) {
     var url = new URL(rootPrefix(currentSlug()) + encodeURI(slug), window.location.href)
-    if (typeof window.spaNavigate === "function") window.spaNavigate(url)
-    else window.location.href = url.toString()
+    if (typeof window.spaNavigate === "function") return window.spaNavigate(url)
+    var t0 = Date.now()
+    return new Promise(function (resolve) {
+      ;(function wait() {
+        if (typeof window.spaNavigate === "function") return resolve(window.spaNavigate(url))
+        if (Date.now() - t0 > 8000) {
+          window.location.href = url.toString()
+          return resolve()
+        }
+        setTimeout(wait, 50)
+      })()
+    })
   }
 
   // ---------- dữ liệu ----------
@@ -1273,7 +1286,7 @@
       if (!target) return all.length ? "Chỉ có 1 ghi chú và bạn đang xem nó rồi." : "Không có ghi chú nào khớp."
       markSeen(target)
       setWhy(target)
-      go(target)
+      await go(target)
       return null
     }
     await loadCache()
@@ -1293,7 +1306,7 @@
     nextPickScope = null
     if (!target) return "Chỉ có 1 ghi chú khớp và bạn đang xem nó rồi."
     setWhy(target)
-    go(target)
+    await go(target)
     return null
   }
 
