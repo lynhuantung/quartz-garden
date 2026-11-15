@@ -1001,8 +1001,6 @@
       w = JSON.parse(sessionStorage.getItem(WHY_KEY) || "null")
       sessionStorage.removeItem(WHY_KEY)
     } catch (e) {}
-    var old = document.getElementById("tl-why")
-    if (old) old.remove()
     var dec = function (x) {
       try {
         return decodeURIComponent(x)
@@ -1010,12 +1008,17 @@
         return x
       }
     }
-    if (!w || dec(w.s) !== dec(currentSlug())) return
+    var here = dec(currentSlug())
+    var old = document.getElementById("tl-why")
+    // Sự kiện nav có thể phát hai lần cho cùng một trang: lần sau không được xóa dòng lý do vừa hiện.
+    if (old && (w || old.getAttribute("data-slug") !== here)) old.remove()
+    if (!w || dec(w.s) !== here) return
     // Đặt lý do ngay dưới tiêu đề, nằm trong dòng chữ: không che nội dung, đọc lúc nào cũng được.
     var h = document.querySelector(".center .article-title") || document.querySelector(".article-title")
     if (!h) return showTip(w.w)
     var n = el("div", "tl-why-inline")
     n.id = "tl-why"
+    n.setAttribute("data-slug", here)
     n.setAttribute("role", "status")
     var ic = el("span", "tl-why-icon")
     ic.innerHTML = DICE_SVG.replace(/width="22" height="22"/, 'width="15" height="15"')
