@@ -31,8 +31,8 @@ const repo = authConfig.repo || "obs-Personal"
 const branch = process.env.VAULT_BRANCH || "obs-Personal"
 // Mật khẩu chung bắt buộc lấy từ secret SITE_PASSWORD; không có mật khẩu dự phòng ghi cứng.
 const sitePassword = process.env.SITE_PASSWORD || ""
-if (sitePassword.length < 12) {
-  console.error("protect-site: thiếu secret SITE_PASSWORD hoặc mật khẩu quá ngắn (cần ít nhất 12 ký tự)")
+if (!sitePassword) {
+  console.error("protect-site: thiếu secret SITE_PASSWORD")
   process.exit(1)
 }
 
