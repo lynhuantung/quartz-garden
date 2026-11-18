@@ -81,7 +81,9 @@ const normTitle = (s) =>
 function stripDupH1(body, title) {
   const m = body.match(/^(?:[ \t]*\r?\n)*#[ \t]+(.+?)[ \t]*#*[ \t]*(?:\r?\n|$)(?:[ \t]*\r?\n)?/)
   if (!m || normTitle(m[1]) !== normTitle(title)) return body
-  return body.slice(m[0].length)
+  // Đường kẻ ngang ngay dưới H1 cũng bỏ: nếu không, nội dung mở đầu bằng "---" và Quartz
+  // hiểu nhầm là frontmatter (ghi chú không còn frontmatter sau khi bỏ dg-*), làm hỏng build.
+  return body.slice(m[0].length).replace(/^(?:[ \t]*\r?\n)*[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*(?:\r?\n|$)/, "")
 }
 
 const flag = (fm, key) => new RegExp(`^${key}:\\s*true\\s*$`, "mi").test(fm)
