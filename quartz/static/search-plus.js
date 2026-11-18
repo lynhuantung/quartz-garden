@@ -997,6 +997,62 @@
     return "review"
   }
 
+  // Ưu tiên theo tầng (người dùng 2026-11-18): cùng nhánh mã Zettel với thẻ đang đọc (6/12a → nhánh 6)
+  // → cùng thư mục → phần còn lại của wiki. Tầng trống (đã đọc hết trong phiên) thì tự sang tầng kế.
+  var TIER_SHARE = [0.6, 0.25, 0.15]
+
+  function branchOf(slug) {
+    var c = codeFromName(decSlug(String(slug || "")).split("/").pop())
+    return c ? c.split("/")[0] : ""
+  }
+
+  function dirOf(slug) {
+    var s = decSlug(String(slug || "")).toLowerCase()
+    var i = s.lastIndexOf("/")
+    return i > 0 ? s.slice(0, i) : ""
+  }
+
+  function branchName(b) {
+    var root = codeTitles && codeTitles[b + "/0"]
+    return root ? cleanTopic(root) : codeFolder[b] || ""
+  }
+
+  function folderName(slug) {
+    if (G) {
+      var i = G.idx.get(slug)
+      var fp = i === undefined ? "" : String(G.fp[i] || "")
+      var parts = fp.split("/")
+      if (parts.length > 1) return parts[parts.length - 2].replace(/^\d+\s*-\s*/, "")
+    }
+    return ""
+  }
+
+  function pickTier(cands, here) {
+    var b = branchOf(here)
+    var d = dirOf(here)
+    var tiers = [[], [], []]
+    cands.forEach(function (s) {
+      if (b && branchOf(s) === b) tiers[0].push(s)
+      else if (d && dirOf(s) === d) tiers[1].push(s)
+      else tiers[2].push(s)
+    })
+    var idx = [0, 1, 2].filter(function (k) {
+      return tiers[k].length
+    })
+    var k = weightedPick(idx, function (x) {
+      return TIER_SHARE[x]
+    })
+    var why = ""
+    if (k === 0) {
+      var bn = branchName(b)
+      why = "Tiếp tục nhánh " + b + (bn ? " «" + bn + "»" : "") + ". "
+    } else if (k === 1) {
+      var fn = folderName(here)
+      why = "Cùng thư mục" + (fn ? " «" + fn + "»" : "") + ". "
+    }
+    return { list: tiers[k], why: why }
+  }
+
   // Chọn ghi chú cho lần bấm tới; lý do được lưu vào whyOf[slug] để hiện sau khi mở.
   function choose(slugs, here) {
     var seen = readSeen()
@@ -1009,6 +1065,8 @@
       })
     }
     if (cands.length === 0) return null
+    var tier = pickTier(cands, here)
+    cands = tier.list
     var now = Date.now()
     var m = memLoad()
     var inC = new Set(cands)
@@ -1021,15 +1079,20 @@
     var pressure = pressureOf(dueCount)
     var mode = G ? pickMode(trail, pressure) : "review"
     var order = [mode, "review", "connect", "explore", "bridge"]
+    // Đang ở tầng cùng nhánh / cùng thư mục thì không ép "chuyển chủ đề" (mâu thuẫn với ưu tiên nhóm).
+    if (tier.why)
+      order = order.filter(function (x) {
+        return x !== "bridge"
+      })
     for (var k = 0; k < order.length; k++) {
       var got = pickBy(order[k], cands, inC, trail, here, m, now, pressure)
       if (got) {
-        whyOf[got[0]] = got[1]
+        whyOf[got[0]] = tier.why + got[1]
         return got[0]
       }
     }
     var any = cands[Math.floor(Math.random() * cands.length)]
-    whyOf[any] = "Ghi chú được chọn ngẫu nhiên."
+    whyOf[any] = tier.why + "Ghi chú được chọn ngẫu nhiên."
     return any
   }
 

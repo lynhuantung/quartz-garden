@@ -8,6 +8,10 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.18-1 · 18/11/2026
+- Nút Ngẫu nhiên ưu tiên theo tầng: trước hết là thẻ cùng nhánh mã Zettel với thẻ đang đọc (đang ở 6/12a thì ưu tiên nhánh 6), kế đến là thẻ cùng thư mục, sau cùng mới đến phần khác của wiki.
+- Dòng lý do dưới tiêu đề ghi rõ "Tiếp tục nhánh …" hoặc "Cùng thư mục …".
+
 ## 2026.11.15-7 · 15/11/2026
 - Điện thoại: bấm Ngẫu nhiên mở ghi chú nhanh hơn nhiều, không còn tải lại cả trang.
 - Cây thư mục (nút ≡) chỉ được dựng khi bạn mở nó, nên chuyển trang nhẹ hơn.
