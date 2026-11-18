@@ -1346,7 +1346,7 @@
     if (fab) {
       var st = allSlugs ? memStats(allSlugs) : null
       var info = st ? " · đến hạn ôn " + st.due + " · chưa xem " + st.fresh + "/" + st.total : ""
-      fab.title = (q ? "Ôn ghi chú trong: " + q : "Ôn ghi chú theo đường cong lãng quên") + info
+      fab.title = (q ? "Ôn ghi chú trong: " + q : "Ôn ghi chú theo đường cong lãng quên") + info + " · phím tắt: R"
       fab.classList.toggle("has-scope", !!q)
     }
     if (!q) {
@@ -1543,7 +1543,7 @@
     btn.type = "button"
     btn.className = "tl-random-btn"
     btn.setAttribute("aria-label", "Mở ghi chú ngẫu nhiên")
-    btn.title = "Mở ghi chú ngẫu nhiên (điện thoại: giữ và kéo lên/xuống để đổi chỗ nút; lọc theo #tag, /thư-mục: dùng ô tìm kiếm)"
+    btn.title = "Mở ghi chú ngẫu nhiên (phím tắt: R; điện thoại: giữ và kéo lên/xuống để đổi chỗ nút; lọc theo #tag, /thư-mục, mã 8/: dùng ô tìm kiếm)"
     btn.innerHTML = DICE_SVG + '<span class="tl-random-label">Ngẫu nhiên</span>'
     btn.addEventListener("click", async function () {
       if (btn.__dragEnd && Date.now() - btn.__dragEnd < 400) return
@@ -1566,6 +1566,26 @@
     bindFabDrag(btn)
     document.body.appendChild(btn)
     refreshScopeChip()
+    bindRandomKey()
+  }
+
+  // Phím tắt R (người dùng 2026-11-18): bấm R ở bất kỳ đâu trên trang = bấm nút nổi (giữ phạm vi đang nhớ).
+  // Bỏ qua khi đang gõ chữ (ô nhập, vùng soạn thảo), khi giữ Ctrl/Alt/Cmd, khi giữ phím (lặp) hoặc khi ô tìm kiếm đang mở.
+  var randomKeyBound = false
+  function bindRandomKey() {
+    if (randomKeyBound) return
+    randomKeyBound = true
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "r" && e.key !== "R") return
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing || e.defaultPrevented) return
+      var t = e.target
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ""))) return
+      if (document.querySelector(".search-container.active")) return
+      var b = document.getElementById(BTN_ID)
+      if (!b) return
+      e.preventDefault()
+      b.click()
+    })
   }
 
   // Điện thoại: giữ và kéo nút lên/xuống tới chỗ ngón cái hay đặt; vị trí lưu trong trình duyệt này.
