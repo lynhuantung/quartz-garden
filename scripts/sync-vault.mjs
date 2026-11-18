@@ -49,7 +49,7 @@ function splitFrontmatter(text) {
 }
 
 function extractTitle(fm, targetPath) {
-  const m = fm.match(/^title:\s*(.+)$/im)
+  const m = fm.match(/^title:[ 	]*(.+)$/im)
   if (m) {
     const raw = m[1].trim().replace(/^["']|["']$/g, "").trim()
     if (raw) return raw
@@ -63,6 +63,25 @@ function escapeHtml(str) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
+}
+
+// Quartz đã in tiêu đề trang (từ `title`). Thẻ Zettel lại mở đầu bằng "# Tiêu đề" trùng ý,
+// nên trang hiện tiêu đề hai lần và mục lục thừa một mục (người dùng 2026-11-18).
+// Bỏ dòng "# ..." ĐẦU TIÊN của nội dung khi nó trùng tiêu đề (so sau khi bỏ dấu câu, hoa thường).
+// Ghi chú trong vault giữ nguyên; H1 khác tiêu đề thì giữ.
+const normTitle = (s) =>
+  String(s)
+    .normalize("NFC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    // bỏ mã/số thứ tự đầu tiêu đề: "27-1b ...", "01 - ...", "0a1 - ...", "1.Quả Táo"
+    .replace(/^\d+[a-z]?\d*( \d+[a-z0-9]*)? /, "")
+
+function stripDupH1(body, title) {
+  const m = body.match(/^(?:[ \t]*\r?\n)*#[ \t]+(.+?)[ \t]*#*[ \t]*(?:\r?\n|$)(?:[ \t]*\r?\n)?/)
+  if (!m || normTitle(m[1]) !== normTitle(title)) return body
+  return body.slice(m[0].length)
 }
 
 const flag = (fm, key) => new RegExp(`^${key}:\\s*true\\s*$`, "mi").test(fm)
@@ -118,7 +137,7 @@ for (const vault of vaults) {
     if ( sitePassword && !/^password:/im.test(fmOut) ) {
       fmOut = `${fmOut}${fmOut ? "\n" : ""}password: ${JSON.stringify(sitePassword)}`
     }
-    const content = (fmOut ? `---\n${fmOut}\n---\n` : "") + body
+    const content = (fmOut ? `---\n${fmOut}\n---\n` : "") + (isHome ? body : stripDupH1(body, extractTitle(cleanFm, target)))
     const dest = path.join(outDir, target)
 
     if (!seenTargets.has(target)) {

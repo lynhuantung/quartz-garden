@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.18-3 · 18/11/2026
+- Tiêu đề ghi chú không còn hiện hai lần (tiêu đề trang và dòng tiêu đề đầu nội dung); mục lục bên phải cũng bớt mục thừa.
+
 ## 2026.11.18-2 · 18/11/2026
 - Máy tính: bấm phím R ở bất kỳ đâu trên trang để mở ghi chú ngẫu nhiên, giống bấm nút; khi đang gõ trong ô tìm kiếm thì phím R không có tác dụng này.
 
