@@ -11,6 +11,9 @@ if (!fs.existsSync(jsFile)) {
   process.exit(0)
 }
 
+// search-plus.js: tìm kiếm nâng cao + ghi chú ngẫu nhiên. read-aloud.js: nút "Nghe" đọc ghi chú (có thì gắn).
+const scripts = ["search-plus.js", "read-aloud.js"].filter((n) => fs.existsSync(path.join(publicDir, "static", n)))
+
 function* walkHtml(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name)
@@ -22,12 +25,17 @@ function* walkHtml(dir) {
 let injected = 0
 for (const htmlFile of walkHtml(publicDir)) {
   let html = fs.readFileSync(htmlFile, "utf8")
-  if (html.includes("search-plus.js") || !html.includes("</head>")) continue
+  if (!html.includes("</head>")) continue
   const rel = path.relative(path.dirname(htmlFile), path.join(publicDir, "static")).replace(/\\/g, "/")
-  const src = (rel.startsWith(".") ? rel : `./${rel}`) + "/search-plus.js"
-  const tag = `<script src="${src}" type="application/javascript" data-persist="true" defer></script>`
-  html = html.replace("</head>", () => `${tag}</head>`)
+  const base = rel.startsWith(".") ? rel : `./${rel}`
+  let tags = ""
+  for (const name of scripts) {
+    if (html.includes(`/${name}"`)) continue
+    tags += `<script src="${base}/${name}" type="application/javascript" data-persist="true" defer></script>`
+  }
+  if (!tags) continue
+  html = html.replace("</head>", () => `${tags}</head>`)
   fs.writeFileSync(htmlFile, html, "utf8")
   injected++
 }
-console.log(`inject-random-note: đã gắn tìm kiếm nâng cao + ghi chú ngẫu nhiên vào ${injected} trang HTML.`)
+console.log(`inject-random-note: đã gắn ${scripts.join(" + ")} vào ${injected} trang HTML.`)

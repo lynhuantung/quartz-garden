@@ -8,6 +8,11 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.19-1 · 19/11/2026
+- Mỗi ghi chú có nút "Nghe" dưới tiêu đề: bấm để nghe đọc to bài viết, câu đang đọc được tô sáng và trang tự cuộn theo.
+- Thanh điều khiển ở đáy màn hình: lùi câu, tạm dừng, tới câu, đổi tốc độ (0,75× đến 2×, trình duyệt nhớ), tắt; chạm vào một đoạn để nghe từ đoạn đó.
+- Giọng đọc lấy từ máy: trên máy tính nên dùng Edge (giọng HoaiMy, NamMinh tự nhiên); điện thoại Android dùng giọng Google tiếng Việt.
+
 ## 2026.11.18-3 · 18/11/2026
 - Tiêu đề ghi chú không còn hiện hai lần (tiêu đề trang và dòng tiêu đề đầu nội dung); mục lục bên phải cũng bớt mục thừa.
 
