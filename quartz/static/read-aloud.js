@@ -214,7 +214,21 @@
     }
     var art = article()
     if (!art) return items
+    // Người dùng 2026-11-19: dừng đọc ở tiêu đề mục "Liên kết" (kể cả "Liên kết ngoài", "Liên kết khác"...),
+    // bỏ qua mục đó và mọi thứ bên dưới.
+    var stop = null
+    art.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach(function (hd) {
+      if (stop) return
+      var tx = (hd.textContent || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/đ/gi, "d")
+        .trim()
+        .toLowerCase()
+      if (/^lien ket\b/.test(tx)) stop = hd
+    })
     art.querySelectorAll(BLOCK_SEL).forEach(function (b) {
+      if (stop && (b === stop || stop.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)) return
       if (b.closest(SKIP_SEL)) return
       if (b.closest("details:not([open])")) return
       if (!b.getClientRects().length) return // ẩn

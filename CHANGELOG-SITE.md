@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.19-2 · 19/11/2026
+- Nút "Nghe" đọc tới hết phần nội dung chính rồi dừng, bỏ qua mục "Liên kết" và phần bên dưới.
+
 ## 2026.11.19-1 · 19/11/2026
 - Mỗi ghi chú có nút "Nghe" dưới tiêu đề: bấm để nghe đọc to bài viết, câu đang đọc được tô sáng và trang tự cuộn theo.
 - Thanh điều khiển ở đáy màn hình: lùi câu, tạm dừng, tới câu, đổi tốc độ (0,75× đến 2×, trình duyệt nhớ), tắt; chạm vào một đoạn để nghe từ đoạn đó.
