@@ -138,14 +138,14 @@
       }
       return true
     })
-    // Câu dài hơn 260 ký tự: cắt ở dấu phẩy gần nhất để giọng đọc không bị ngắt giữa chừng (lỗi Chrome).
+    // Câu dài hơn 190 ký tự: cắt ở dấu phẩy gần nhất (Chrome hay ngắt câu dài; giọng Google trực tuyến nhận tối đa ~200 ký tự).
     var out = []
     res.forEach(function (r) {
       var a = r.start
-      while (r.end - a > 260) {
-        var cut = s.lastIndexOf(",", a + 240)
-        if (cut <= a + 40) cut = s.lastIndexOf(" ", a + 240)
-        if (cut <= a + 40) cut = a + 240
+      while (r.end - a > 190) {
+        var cut = s.lastIndexOf(",", a + 180)
+        if (cut <= a + 40) cut = s.lastIndexOf(" ", a + 180)
+        if (cut <= a + 40) cut = a + 180
         out.push({ start: a, end: cut + 1 })
         a = cut + 1
       }
@@ -274,12 +274,89 @@
   })
 
   // ---------- phát ----------
+  // ---------- giọng Google tiếng Việt trực tuyến (dự phòng khi máy không có giọng Việt) ----------
+  // Người dùng 2026-11-19: "giọng đọc luôn là tiếng Việt". Không bao giờ để trình duyệt tự chọn giọng khác
+  // (Chrome trên Windows không có giọng Việt sẽ đọc bằng giọng tiếng Anh). Mỗi câu là một tệp MP3 ngắn,
+  // tải trước câu kế tiếp để đọc liền mạch.
+  var GTTS = "https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q="
+  var curAudio = null
+  // Google trả 404 nếu yêu cầu kèm Referer của trang. Thẻ <audio> không có thuộc tính referrerpolicy, nên đặt
+  // chính sách no-referrer cho cả tài liệu (chỉ khi dùng giọng Google; không ảnh hưởng gì khác của site).
+  function noReferrer() {
+    if (document.querySelector('meta[name="referrer"][data-tl-tts]')) return
+    var m = document.createElement("meta")
+    m.name = "referrer"
+    m.content = "no-referrer"
+    m.setAttribute("data-tl-tts", "1")
+    document.head.appendChild(m)
+  }
+  function audioOf(i) {
+    var it = st.items[i]
+    if (!it) return null
+    if (!it.audio) {
+      noReferrer()
+      it.audio = new Audio()
+      it.audio.preload = "auto"
+      it.audio.src = GTTS + encodeURIComponent(it.text)
+    }
+    return it.audio
+  }
+  function stopAudio() {
+    if (!curAudio) return
+    try {
+      curAudio.onended = curAudio.onerror = null
+      curAudio.pause()
+      curAudio.currentTime = 0
+    } catch (e) {}
+    curAudio = null
+  }
+  function playAudio(i, my, next) {
+    var a = audioOf(i)
+    curAudio = a
+    a.playbackRate = st.rate
+    a.onended = next
+    a.onerror = function () {
+      if (my !== st.token) return
+      audioFail()
+    }
+    try {
+      a.currentTime = 0
+    } catch (e) {}
+    var p = a.play()
+    if (p && p.catch)
+      p.catch(function (err) {
+        if (my !== st.token) return
+        if (err && err.name === "AbortError") return
+        audioFail()
+      })
+    audioOf(i + 1) // tải trước câu sau
+  }
+  function audioFail() {
+    pause()
+    st.msg = "Cần mạng để đọc tiếng Việt"
+    st.msgUntil = Date.now() + 8000
+    renderBar()
+  }
+  function releaseAudio() {
+    stopAudio()
+    st.items.forEach(function (it) {
+      if (it.audio) {
+        try {
+          it.audio.removeAttribute("src")
+          it.audio.load()
+        } catch (e) {}
+        it.audio = null
+      }
+    })
+  }
+
   function speakAt(i) {
     st.token++
     var my = st.token
     try {
       synth.cancel()
     } catch (e) {}
+    stopAudio()
     if (i >= st.items.length) {
       finish()
       return
@@ -290,14 +367,7 @@
     var it = st.items[i]
     mark(it)
     renderBar()
-    var u = new SpeechSynthesisUtterance(it.text)
-    u.lang = (st.voice && st.voice.lang) || "vi-VN"
-    if (st.voice)
-      try {
-        u.voice = st.voice
-      } catch (e) {}
-    u.rate = st.rate
-    u.onend = function () {
+    var next = function () {
       if (my !== st.token || !st.playing) return
       // Ngắt nghỉ dài hơn một chút sau tiêu đề.
       setTimeout(
@@ -307,6 +377,17 @@
         it.isTitle ? 350 : 60,
       )
     }
+    if (st.useAudio) {
+      playAudio(i, my, next)
+      return
+    }
+    var u = new SpeechSynthesisUtterance(it.text)
+    u.lang = st.voice.lang || "vi-VN"
+    try {
+      u.voice = st.voice
+    } catch (e) {}
+    u.rate = st.rate
+    u.onend = next
     u.onerror = function (e) {
       if (my !== st.token) return
       if (e && (e.error === "interrupted" || e.error === "canceled")) return
@@ -328,6 +409,7 @@
     try {
       synth.cancel()
     } catch (e) {}
+    stopAudio()
     renderBar()
   }
   function finish() {
@@ -343,6 +425,7 @@
     try {
       synth.cancel()
     } catch (e) {}
+    releaseAudio()
     clearMark()
     var bar = document.getElementById("tl-tts-bar")
     if (bar) bar.remove()
@@ -354,8 +437,10 @@
     st.items = collect()
     if (!st.items.length) return
     refreshVoice()
-    // Máy không có giọng tiếng Việt: vẫn đọc (trình duyệt tự chọn theo lang vi-VN), nhưng báo vài giây để người dùng biết vì sao giọng lạ.
-    st.noVoiceUntil = st.voice ? 0 : Date.now() + 6000
+    // Máy không có giọng tiếng Việt: dùng giọng Google tiếng Việt trực tuyến cho cả bài (không đổi giữa chừng).
+    st.useAudio = !st.voice
+    st.msg = st.useAudio ? "Giọng Google trực tuyến" : ""
+    st.msgUntil = st.useAudio ? Date.now() + 5000 : 0
     st.open = true
     st.idx = 0
     document.documentElement.classList.add("tl-tts-on")
@@ -421,11 +506,11 @@
     main.title = lbl
     bar.querySelector(".tl-tts-rate").textContent = String(st.rate).replace(".", ",") + "×"
     var info = bar.querySelector(".tl-tts-info")
-    info.title = st.voice
+    info.title = !st.useAudio && st.voice
       ? "Giọng: " + st.voice.name
-      : "Máy chưa cài giọng tiếng Việt. Android: Cài đặt > Quản lý chung > Chuyển văn bản thành giọng nói > Google > tải dữ liệu Tiếng Việt. Windows: dùng Edge (có sẵn giọng HoaiMy, NamMinh)."
+      : "Máy chưa có giọng tiếng Việt nên dùng giọng Google trực tuyến (cần mạng). Muốn đọc không cần mạng: Android vào Cài đặt > Quản lý chung > Chuyển văn bản thành giọng nói > Google > tải dữ liệu Tiếng Việt; máy tính dùng Edge (giọng HoaiMy, NamMinh)."
     if (done) info.textContent = "Đã đọc hết"
-    else if (st.noVoiceUntil && Date.now() < st.noVoiceUntil) info.textContent = "Máy chưa có giọng Việt"
+    else if (st.msg && Date.now() < st.msgUntil) info.textContent = st.msg
     else info.textContent = "Câu " + (st.idx + 1) + "/" + st.items.length
     bar.classList.toggle("is-paused", !st.playing)
     syncBtn()
@@ -512,6 +597,12 @@
     },
     voice: function () {
       return st.voice ? st.voice.name + " (" + st.voice.lang + ")" : null
+    },
+    engine: function () {
+      return st.useAudio ? "google-online" : "browser"
+    },
+    audio: function () {
+      return curAudio ? { src: curAudio.src, time: curAudio.currentTime, paused: curAudio.paused, rate: curAudio.playbackRate } : null
     },
     state: function () {
       return { open: st.open, playing: st.playing, idx: st.idx, n: st.items.length, rate: st.rate }

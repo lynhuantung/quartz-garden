@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.19-3 · 19/11/2026
+- Nút "Nghe" luôn đọc bằng giọng tiếng Việt: máy nào chưa có giọng Việt (vd Chrome trên máy tính) thì tự dùng giọng Google tiếng Việt qua mạng, không còn đọc bằng giọng tiếng Anh.
+
 ## 2026.11.19-2 · 19/11/2026
 - Nút "Nghe" đọc tới hết phần nội dung chính rồi dừng, bỏ qua mục "Liên kết" và phần bên dưới.
 
