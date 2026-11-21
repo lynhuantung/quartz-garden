@@ -1527,6 +1527,15 @@ html.tl-tts-on article li {
   min-width: 48px;
   font-variant-numeric: tabular-nums;
 }
+.tl-tts-voice {
+  max-width: 6.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  display: inline-block;
+  line-height: 40px;
+}
 .tl-tts-info {
   padding: 0 0.4rem;
   white-space: nowrap;
@@ -1563,6 +1572,15 @@ html.tl-tts-on article li {
   .tl-tts-main {
     width: 48px;
     height: 48px;
+  }
+  .tl-tts-voice {
+    max-width: 5.6rem;
+    padding: 0 0.3rem;
+    line-height: 44px;
+  }
+  .tl-tts-info {
+    padding: 0 0.2rem;
+    font-size: 0.75rem;
   }
   html.tl-tts-on body {
     padding-bottom: 5rem;

@@ -8,12 +8,55 @@
 // - Chạm vào một đoạn khi đang nghe thì nhảy tới đọc từ đoạn đó.
 // - Tạm dừng = hủy câu đang đọc rồi đọc lại từ đầu câu đó khi bấm tiếp (speechSynthesis.pause() không chạy
 //   ổn định trên Chrome Android).
-// - Giọng: ưu tiên giọng tiếng Việt tự nhiên (Edge: "HoaiMy/NamMinh Online (Natural)"), rồi Google, rồi giọng vi bất kỳ.
+// - Giọng (2026-11-21): ưu tiên tệp MP3 giọng Hoài My ghi sẵn (static/tts/<băm câu>.mp3, có khi mọi câu của trang
+//   đều có tệp), rồi giọng tiếng Việt của trình duyệt (Edge: "Hoài My/Nam Minh Online (Natural)"), cuối cùng
+//   giọng Google trực tuyến. Nút "Giọng" trên thanh đọc cho đổi giọng; lựa chọn lưu trong localStorage.
 ;(function () {
   if (window.__tlReadAloudInit) return
   window.__tlReadAloudInit = true
   var synth = window.speechSynthesis
   if (!synth || typeof window.SpeechSynthesisUtterance !== "function") return
+
+  // Thư mục tệp MP3 ghi sẵn. Hai site GitHub (garden, mobile) dùng chung bộ tệp của garden (cùng tên miền);
+  // bản local và nơi khác lấy theo vị trí của chính script này (…/static/tts/).
+  var SCRIPT_SRC = (document.currentScript && document.currentScript.src) || ""
+  var TTS_BASE = /(^|\.)lynhuantung\.github\.io$/i.test(location.hostname)
+    ? location.origin + "/quartz-garden/static/tts/"
+    : SCRIPT_SRC
+      ? SCRIPT_SRC.replace(/read-aloud\.js.*$/, "tts/")
+      : "/static/tts/"
+  var VOICE_KEY = "tl-tts-voice"
+
+  // Băm câu thành tên tệp (FNV-1a 32 bit, hai hạt giống → 16 ký tự hex). Script tạo MP3 dùng đúng hàm này.
+  function ttsHash(s) {
+    var b = new TextEncoder().encode(s)
+    var h1 = 0x811c9dc5
+    var h2 = 0x9747b28c
+    for (var i = 0; i < b.length; i++) {
+      h1 = Math.imul(h1 ^ b[i], 16777619) >>> 0
+      h2 = Math.imul(h2 ^ b[i], 16777619) >>> 0
+    }
+    return ("0000000" + h1.toString(16)).slice(-8) + ("0000000" + h2.toString(16)).slice(-8)
+  }
+  var ttsSet = null // Set các mã băm có tệp MP3
+  var ttsLoading = null
+  function loadTtsIndex() {
+    if (ttsSet) return Promise.resolve(ttsSet)
+    if (ttsLoading) return ttsLoading
+    ttsLoading = fetch(TTS_BASE + "index.json", { cache: "no-cache" })
+      .then(function (r) {
+        return r.ok ? r.json() : { h: [] }
+      })
+      .then(function (j) {
+        ttsSet = new Set((j && j.h) || [])
+        return ttsSet
+      })
+      .catch(function () {
+        ttsSet = new Set()
+        return ttsSet
+      })
+    return ttsLoading
+  }
 
   var RATE_KEY = "tl-tts-rate"
   var RATES = [0.75, 1, 1.25, 1.5, 1.75, 2]
@@ -82,6 +125,115 @@
     st.voice = pickVoice()
   }
   refreshVoice()
+
+  function viVoices() {
+    var vs = []
+    try {
+      vs = synth.getVoices() || []
+    } catch (e) {}
+    return vs.filter(function (v) {
+      return /^vi([-_]|$)/i.test(v.lang || "")
+    })
+  }
+  // Tên ngắn cho nút "Giọng": "Microsoft Hoài My Online (Natural) - Vietnamese (Vietnam)" → "Hoài My".
+  function shortName(v) {
+    var n = (v.name || "")
+      .replace(/^Microsoft\s+/i, "")
+      .replace(/\s*-\s*Vietnamese.*$/i, "")
+      .replace(/\s*\((Natural|Neural)\)/i, "")
+      .replace(/\s+Online\b/i, "")
+      .trim()
+    if (/google/i.test(n)) n = "Google máy"
+    return n.length > 12 ? n.slice(0, 11) + "…" : n
+  }
+  // Danh sách giọng dùng được cho các câu hiện tại, theo thứ tự ưu tiên.
+  function buildOptions(items) {
+    var opts = []
+    var allMp3 =
+      ttsSet &&
+      ttsSet.size &&
+      items.length &&
+      items.every(function (it) {
+        return ttsSet.has(ttsHash(it.text))
+      })
+    if (allMp3)
+      opts.push({ key: "mp3", type: "mp3", label: "Tự nhiên", title: "Giọng Hoài My tự nhiên (tệp ghi sẵn, giống nhau trên mọi máy)" })
+    var vi = viVoices()
+    var sc = function (v) {
+      var n = (v.name || "").normalize("NFD").replace(/[̀-ͯ]/g, "")
+      // Hoài My đứng trước Nam Minh (cùng giọng với tệp ghi sẵn).
+      return (/natural|neural|online/i.test(n) ? 4 : 0) + (/hoai ?my/i.test(n) ? 3 : /nam ?minh/i.test(n) ? 2 : 0) + (/google/i.test(n) ? 1 : 0)
+    }
+    vi.sort(function (a, b) {
+      return sc(b) - sc(a)
+    })
+    vi.forEach(function (v) {
+      opts.push({ key: "v:" + v.name, type: "voice", voice: v, label: shortName(v), title: "Giọng của trình duyệt: " + v.name })
+    })
+    opts.push({ key: "google", type: "google", label: "Google", title: "Giọng Google trực tuyến (cần mạng)" })
+    return opts
+  }
+  function loadPref() {
+    try {
+      return localStorage.getItem(VOICE_KEY) || ""
+    } catch (e) {
+      return ""
+    }
+  }
+  function savePref(k) {
+    try {
+      localStorage.setItem(VOICE_KEY, k)
+    } catch (e) {}
+  }
+  function chooseEngine() {
+    st.opts = buildOptions(st.items)
+    var pref = loadPref()
+    var hit = st.opts.filter(function (o) {
+      return o.key === pref
+    })[0]
+    st.eng = hit || st.opts[0]
+    st.voice = st.eng.type === "voice" ? st.eng.voice : null
+    st.useAudio = st.eng.type !== "voice"
+  }
+  function nextEngine() {
+    if (!st.opts || st.opts.length < 2) return
+    var i = st.opts.indexOf(st.eng)
+    st.eng = st.opts[(i + 1) % st.opts.length]
+    st.voice = st.eng.type === "voice" ? st.eng.voice : null
+    st.useAudio = st.eng.type !== "voice"
+    savePref(st.eng.key)
+    releaseAudio()
+    st.msg = ""
+    if (st.playing) speakAt(st.idx)
+    else renderBar()
+  }
+  // Chờ giọng của trình duyệt (Edge tải giọng tự nhiên sau vài trăm ms) và danh sách MP3, tối đa ms mili giây.
+  function waitReady(ms) {
+    var voicesReady = viVoices().length
+      ? Promise.resolve()
+      : new Promise(function (res) {
+          var done = false
+          var fin = function () {
+            if (done) return
+            done = true
+            res()
+          }
+          var on = function () {
+            if (viVoices().length) fin()
+          }
+          try {
+            synth.addEventListener("voiceschanged", on)
+          } catch (e) {}
+          setTimeout(fin, ms)
+        })
+    var idx = Promise.race([
+      loadTtsIndex(),
+      new Promise(function (res) {
+        setTimeout(res, ms)
+      }),
+    ])
+    return Promise.all([voicesReady, idx])
+  }
   if (typeof synth.addEventListener === "function") synth.addEventListener("voiceschanged", refreshVoice)
   else synth.onvoiceschanged = refreshVoice
 
@@ -293,11 +445,24 @@
   function audioOf(i) {
     var it = st.items[i]
     if (!it) return null
+    var key = st.eng ? st.eng.key : "google"
+    if (it.audio && it.audioKey !== key) {
+      try {
+        it.audio.removeAttribute("src")
+        it.audio.load()
+      } catch (e) {}
+      it.audio = null
+    }
     if (!it.audio) {
-      noReferrer()
       it.audio = new Audio()
       it.audio.preload = "auto"
-      it.audio.src = GTTS + encodeURIComponent(it.text)
+      it.audioKey = key
+      if (key === "mp3") {
+        it.audio.src = TTS_BASE + ttsHash(it.text) + ".mp3"
+      } else {
+        noReferrer()
+        it.audio.src = GTTS + encodeURIComponent(it.text)
+      }
     }
     return it.audio
   }
@@ -332,6 +497,18 @@
     audioOf(i + 1) // tải trước câu sau
   }
   function audioFail() {
+    // Tệp ghi sẵn lỗi (thiếu tệp, mất mạng): bỏ lựa chọn này, đọc tiếp bằng giọng kế tiếp.
+    if (st.eng && st.eng.type === "mp3" && st.opts && st.opts.length > 1) {
+      st.opts = st.opts.filter(function (o) {
+        return o.type !== "mp3"
+      })
+      st.eng = st.opts[0]
+      st.voice = st.eng.type === "voice" ? st.eng.voice : null
+      st.useAudio = st.eng.type !== "voice"
+      releaseAudio()
+      speakAt(st.idx)
+      return
+    }
     pause()
     st.msg = "Cần mạng để đọc tiếng Việt"
     st.msgUntil = Date.now() + 8000
@@ -362,6 +539,7 @@
       return
     }
     if (i < 0) i = 0
+    if (!st.eng) chooseEngine()
     st.idx = i
     st.playing = true
     var it = st.items[i]
@@ -436,16 +614,22 @@
   function start() {
     st.items = collect()
     if (!st.items.length) return
-    refreshVoice()
-    // Máy không có giọng tiếng Việt: dùng giọng Google tiếng Việt trực tuyến cho cả bài (không đổi giữa chừng).
-    st.useAudio = !st.voice
-    st.msg = st.useAudio ? "Giọng Google trực tuyến" : ""
-    st.msgUntil = st.useAudio ? Date.now() + 5000 : 0
     st.open = true
     st.idx = 0
+    st.eng = null
+    st.msg = "Đang chuẩn bị giọng…"
+    st.msgUntil = Date.now() + 4000
     document.documentElement.classList.add("tl-tts-on")
     ensureBar()
-    speakAt(0)
+    renderBar()
+    var my = ++st.token
+    // Chờ tối đa 2,5 giây cho giọng tự nhiên của trình duyệt và danh sách MP3, rồi chọn giọng cho cả bài.
+    waitReady(2500).then(function () {
+      if (my !== st.token || !st.open) return
+      chooseEngine()
+      st.msg = ""
+      speakAt(0)
+    })
   }
 
   // ---------- giao diện ----------
@@ -484,6 +668,7 @@
     var info = document.createElement("span")
     info.className = "tl-tts-info"
     bar.appendChild(info)
+    bar.appendChild(btnEl("tl-tts-b tl-tts-voice", "Giọng", "Đổi giọng đọc", nextEngine))
     bar.appendChild(btnEl("tl-tts-b tl-tts-rate", "1×", "Tốc độ đọc", function () {
       var i = RATES.indexOf(st.rate)
       st.rate = RATES[(i + 1) % RATES.length]
@@ -506,9 +691,19 @@
     main.title = lbl
     bar.querySelector(".tl-tts-rate").textContent = String(st.rate).replace(".", ",") + "×"
     var info = bar.querySelector(".tl-tts-info")
-    info.title = !st.useAudio && st.voice
-      ? "Giọng: " + st.voice.name
-      : "Máy chưa có giọng tiếng Việt nên dùng giọng Google trực tuyến (cần mạng). Muốn đọc không cần mạng: Android vào Cài đặt > Quản lý chung > Chuyển văn bản thành giọng nói > Google > tải dữ liệu Tiếng Việt; máy tính dùng Edge (giọng HoaiMy, NamMinh)."
+    var vb = bar.querySelector(".tl-tts-voice")
+    if (vb) {
+      vb.textContent = st.eng ? st.eng.label : "Giọng"
+      var vt = (st.eng ? st.eng.title : "Giọng đọc") + (st.opts && st.opts.length > 1 ? ". Bấm để đổi giọng." : "")
+      vb.title = vt
+      vb.setAttribute("aria-label", vt)
+    }
+    info.title =
+      st.eng && st.eng.type === "google"
+        ? "Đang dùng giọng Google trực tuyến (cần mạng). Giọng tự nhiên hơn: mở bằng Edge trên máy tính (Hoài My, Nam Minh), hoặc ghi chú đã có tệp giọng ghi sẵn."
+        : st.eng
+          ? st.eng.title
+          : ""
     if (done) info.textContent = "Đã đọc hết"
     else if (st.msg && Date.now() < st.msgUntil) info.textContent = st.msg
     else info.textContent = "Câu " + (st.idx + 1) + "/" + st.items.length
@@ -554,6 +749,7 @@
     row.appendChild(b)
     h.insertAdjacentElement("afterend", row)
     syncBtn()
+    loadTtsIndex() // tải trước danh sách tệp giọng ghi sẵn
   }
 
   // Chạm vào một đoạn khi đang mở thanh đọc: đọc từ câu đầu của đoạn đó (bỏ qua khi bấm vào liên kết).
@@ -596,11 +792,19 @@
       })
     },
     voice: function () {
-      return st.voice ? st.voice.name + " (" + st.voice.lang + ")" : null
+      return st.voice ? st.voice.name + " (" + st.voice.lang + ")" : st.eng ? st.eng.label : null
     },
     engine: function () {
-      return st.useAudio ? "google-online" : "browser"
+      return !st.eng ? null : st.eng.type === "mp3" ? "mp3" : st.eng.type === "google" ? "google-online" : "browser"
     },
+    options: function () {
+      return (st.opts || []).map(function (o) {
+        return o.key
+      })
+    },
+    next: nextEngine,
+    hash: ttsHash,
+    ttsBase: TTS_BASE,
     audio: function () {
       return curAudio ? { src: curAudio.src, time: curAudio.currentTime, paused: curAudio.paused, rate: curAudio.playbackRate } : null
     },

@@ -8,6 +8,11 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.21-2 · 21/11/2026
+- Nút "Nghe": thanh đọc hiện tên giọng đang đọc; bấm vào tên để đổi giọng (Hoài My, Nam Minh, Google…), máy nhớ lựa chọn.
+- Mở bằng Edge trên máy tính: chờ giọng tự nhiên Hoài My tải xong rồi mới đọc, không còn rơi về giọng Google.
+- Chuẩn bị đọc bằng tệp giọng Hoài My ghi sẵn, giống nhau trên mọi máy (áp dụng dần cho từng sách).
+
 ## 2026.11.21-1 · 21/11/2026
 - Điện thoại: mục "Liên kết" cuối bài và vùng "Liên kết ngược" thu gọn thành một dòng (kèm số liên kết), chạm vào để mở khi cần; Sơ đồ vẫn hiện như cũ.
 - Điện thoại: khung Properties (các thẻ #tag) đóng sẵn, bài viết hiện ngay ở màn hình đầu.
