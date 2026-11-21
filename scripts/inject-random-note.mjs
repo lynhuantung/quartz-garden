@@ -12,7 +12,7 @@ if (!fs.existsSync(jsFile)) {
 }
 
 // search-plus.js: tìm kiếm nâng cao + ghi chú ngẫu nhiên. read-aloud.js: nút "Nghe" đọc ghi chú (có thì gắn).
-const scripts = ["search-plus.js", "read-aloud.js"].filter((n) => fs.existsSync(path.join(publicDir, "static", n)))
+const scripts = ["search-plus.js", "read-aloud.js", "reader-fold.js"].filter((n) => fs.existsSync(path.join(publicDir, "static", n)))
 
 function* walkHtml(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

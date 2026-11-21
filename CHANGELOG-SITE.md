@@ -8,6 +8,10 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.21-1 · 21/11/2026
+- Điện thoại: mục "Liên kết" cuối bài và vùng "Liên kết ngược" thu gọn thành một dòng (kèm số liên kết), chạm vào để mở khi cần; Sơ đồ vẫn hiện như cũ.
+- Điện thoại: khung Properties (các thẻ #tag) đóng sẵn, bài viết hiện ngay ở màn hình đầu.
+
 ## 2026.11.19-3 · 19/11/2026
 - Nút "Nghe" luôn đọc bằng giọng tiếng Việt: máy nào chưa có giọng Việt (vd Chrome trên máy tính) thì tự dùng giọng Google tiếng Việt qua mạng, không còn đọc bằng giọng tiếng Anh.
 
