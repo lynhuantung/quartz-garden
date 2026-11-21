@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.21-3 · 21/11/2026
+- Sửa lỗi trình duyệt còn giữ bản cũ của nút "Nghe" và ô tìm kiếm sau khi website cập nhật; nay tải lại trang là có bản mới ngay.
+
 ## 2026.11.21-2 · 21/11/2026
 - Nút "Nghe": thanh đọc hiện tên giọng đang đọc; bấm vào tên để đổi giọng (Hoài My, Nam Minh, Google…), máy nhớ lựa chọn.
 - Mở bằng Edge trên máy tính: chờ giọng tự nhiên Hoài My tải xong rồi mới đọc, không còn rơi về giọng Google.
