@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.22-1 · 22/11/2026
+- Sách "Hướng dẫn triển khai Lean Six Sigma": nút "Nghe" đọc bằng giọng Hoài My tự nhiên ghi sẵn, nghe giống nhau trên mọi máy, kể cả điện thoại. Nút giọng hiện "Tự nhiên".
+
 ## 2026.11.21-3 · 21/11/2026
 - Sửa lỗi trình duyệt còn giữ bản cũ của nút "Nghe" và ô tìm kiếm sau khi website cập nhật; nay tải lại trang là có bản mới ngay.
 
