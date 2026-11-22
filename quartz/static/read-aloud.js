@@ -595,6 +595,10 @@
     st.idx = 0
     clearMark()
     renderBar(true)
+    // random-play.js nghe sự kiện này để tự mở ghi chú ngẫu nhiên kế tiếp (chỉ khi đọc hết tự nhiên)
+    try {
+      document.dispatchEvent(new CustomEvent("tl-tts-finish"))
+    } catch (e) {}
   }
   function stopAll() {
     st.playing = false

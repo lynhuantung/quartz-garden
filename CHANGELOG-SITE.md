@@ -8,6 +8,10 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.22-6 · 22/11/2026
+- Giữ nút Ngẫu nhiên khoảng nửa giây để mở bảng tùy chọn: "Tự đọc khi mở ghi chú ngẫu nhiên" và "Tự chuyển sang ghi chú ngẫu nhiên khác" sau khi đọc xong, tối đa 20 ghi chú rồi dừng; số ghi chú đã tự mở hiện trên nút.
+- Hai tùy chọn tự tắt khi đóng trình duyệt; mở ghi chú bằng liên kết hoặc đóng thanh đọc cũng dừng chuỗi tự chuyển.
+
 ## 2026.11.22-5 · 22/11/2026
 - Điện thoại: nút Ngẫu nhiên đặt cao hơn khoảng 3 cm cho dễ bấm (vẫn kéo lên xuống được; vị trí đã kéo trước đây được đặt lại).
 - Nút "Nghe" chuyển sang bên phải, dễ bấm bằng ngón cái tay phải.

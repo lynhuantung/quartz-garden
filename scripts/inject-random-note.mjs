@@ -13,7 +13,7 @@ if (!fs.existsSync(jsFile)) {
 }
 
 // search-plus.js: tìm kiếm nâng cao + ghi chú ngẫu nhiên. read-aloud.js: nút "Nghe" đọc ghi chú (có thì gắn).
-const scripts = ["search-plus.js", "read-aloud.js", "reader-fold.js", "card-mode.js"].filter((n) => fs.existsSync(path.join(publicDir, "static", n)))
+const scripts = ["search-plus.js", "read-aloud.js", "reader-fold.js", "card-mode.js", "random-play.js"].filter((n) => fs.existsSync(path.join(publicDir, "static", n)))
 // Gắn ?v=<băm nội dung> để trình duyệt tải bản mới ngay sau mỗi lần sửa script (GitHub Pages cho giữ tệp 10 phút,
 // và thẻ data-persist khiến bản cũ chạy tiếp khi chuyển trang trong Quartz).
 const ver = Object.fromEntries(
