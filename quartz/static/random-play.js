@@ -5,13 +5,32 @@
 //     Người dùng 2026-11-22: "khi tắt trình duyệt là sẽ mất tính năng tự động" -> chỉ giữ trong phiên (tải lại trang vẫn giữ,
 //     đóng tab/trình duyệt thì về tắt).
 //   - Chuỗi tự chuyển: người dùng bấm Ngẫu nhiên (bằng tay) là bắt đầu; mỗi lần đọc HẾT bài (sự kiện tl-tts-finish
-//     của read-aloud.js) thì chờ 3 giây rồi tự bấm Ngẫu nhiên; đủ 20 lần tự bấm thì dừng.
+//     của read-aloud.js) thì chờ 3 giây rồi tự bấm Ngẫu nhiên; đủ N lần tự bấm thì dừng (N mặc định 20, chỉnh trong bảng,
+//     lưu localStorage tl-auto-chain-max vì chỉ là con số, không tự bật gì).
 //   - Dừng chuỗi: mở ghi chú khác bằng liên kết/tìm kiếm, hoặc đóng thanh đọc. Tạm dừng thì chuỗi chờ đến khi đọc hết.
 //   - Số lần đã tự bấm hiện nhỏ trên nút Ngẫu nhiên (vd 3/20) trong lúc chuỗi đang chạy.
 ;(function () {
   if (window.__tlRandomPlay) return
   window.__tlRandomPlay = true
-  var MAX = 20
+  var MAX_DEFAULT = 20
+  var MAX_LIMIT = 200
+  var K_MAX = "tl-auto-chain-max" // localStorage: số ghi chú tối đa của một chuỗi (người dùng 2026-11-22: "ghi thêm số trang như 40")
+  function getMax() {
+    var n = 0
+    try {
+      n = parseInt(localStorage.getItem(K_MAX), 10)
+    } catch (e) {}
+    return n >= 1 && n <= MAX_LIMIT ? n : MAX_DEFAULT
+  }
+  function setMax(n) {
+    n = Math.round(+n)
+    if (!(n >= 1)) n = MAX_DEFAULT
+    if (n > MAX_LIMIT) n = MAX_LIMIT
+    try {
+      localStorage.setItem(K_MAX, String(n))
+    } catch (e) {}
+    return n
+  }
   var WAIT_MS = 3000
   var HOLD_MS = 600
   var K_READ = "tl-auto-read"
@@ -52,7 +71,7 @@
     var b = rndBtn()
     if (!b) return
     var s = chainState()
-    if (s && get(K_CHAIN)) b.setAttribute("data-tl-chain", s.k + "/" + MAX)
+    if (s && get(K_CHAIN)) b.setAttribute("data-tl-chain", s.k + "/" + getMax())
     else b.removeAttribute("data-tl-chain")
   }
 
@@ -72,6 +91,13 @@
       ".tl-rp-row+.tl-rp-row{border-top:1px solid var(--lightgray)}" +
       ".tl-rp-row input{flex:none;width:1.15rem;height:1.15rem;margin:.15rem 0 0;accent-color:var(--secondary)}" +
       ".tl-rp-row small{display:block;color:var(--gray);font-size:.8rem;margin-top:.15rem}" +
+      ".tl-rp-max{display:flex;align-items:center;gap:.4rem;padding:.2rem 0 .55rem 1.8rem}" +
+      ".tl-rp-max label{flex:1;font-size:.85rem;color:var(--darkgray)}" +
+      ".tl-rp-max input{width:3.6rem;height:2.1rem;text-align:center;font-size:1rem;border:1px solid var(--lightgray);" +
+      "border-radius:8px;background:var(--light);color:var(--dark);-moz-appearance:textfield}" +
+      ".tl-rp-max input::-webkit-inner-spin-button,.tl-rp-max input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}" +
+      ".tl-rp-step{width:2.1rem;height:2.1rem;border:1px solid var(--lightgray);border-radius:8px;background:var(--light);" +
+      "color:var(--dark);font-size:1.1rem;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
       ".tl-rp-foot{margin-top:.4rem;color:var(--gray);font-size:.78rem}"
     document.head.appendChild(st)
   }
@@ -94,12 +120,37 @@
       '<label class="tl-rp-row"><input type="checkbox" id="tl-rp-read"><span>Tự đọc khi mở ghi chú ngẫu nhiên' +
       "<small>Mở ghi chú bằng nút Ngẫu nhiên thì tự bắt đầu đọc.</small></span></label>" +
       '<label class="tl-rp-row"><input type="checkbox" id="tl-rp-chain"><span>Tự chuyển sang ghi chú ngẫu nhiên khác' +
-      "<small>Đọc xong một ghi chú thì tự mở ghi chú ngẫu nhiên tiếp theo, tối đa " + MAX + " ghi chú rồi dừng.</small></span></label>" +
-      '<div class="tl-rp-foot">Giữ nút Ngẫu nhiên để mở lại bảng này. Đóng trình duyệt thì hai tùy chọn tự tắt.</div>'
+      "<small>Đọc xong một ghi chú thì tự mở ghi chú ngẫu nhiên tiếp theo, đủ số ghi chú dưới đây thì dừng.</small></span></label>" +
+      '<div class="tl-rp-max"><label for="tl-rp-max">Số ghi chú tối đa</label>' +
+      '<button type="button" class="tl-rp-step" data-d="-10" aria-label="Bớt 10">−</button>' +
+      '<input type="number" id="tl-rp-max" min="1" max="' + MAX_LIMIT + '" step="1" inputmode="numeric">' +
+      '<button type="button" class="tl-rp-step" data-d="10" aria-label="Thêm 10">+</button></div>' +
+      '<div class="tl-rp-foot">Giữ nút Ngẫu nhiên để mở lại bảng này. Đóng trình duyệt thì hai tùy chọn tự tắt; số ghi chú tối đa vẫn được giữ.</div>'
     document.body.appendChild(p)
     var cr = p.querySelector("#tl-rp-read")
     var cc = p.querySelector("#tl-rp-chain")
     cr.checked = get(K_READ)
+    var cm = p.querySelector("#tl-rp-max")
+    cm.value = getMax()
+    var saveMax = function () {
+      cm.value = setMax(cm.value)
+      renderBadge()
+    }
+    cm.addEventListener("change", saveMax)
+    cm.addEventListener("blur", saveMax)
+    cm.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        saveMax()
+        cm.blur()
+      }
+    })
+    p.querySelectorAll(".tl-rp-step").forEach(function (bt) {
+      bt.addEventListener("click", function () {
+        var v = (parseInt(cm.value, 10) || getMax()) + +bt.dataset.d
+        cm.value = setMax(Math.max(1, v))
+        renderBadge()
+      })
+    })
     cc.checked = get(K_CHAIN)
     cr.addEventListener("change", function () {
       set(K_READ, cr.checked)
@@ -248,7 +299,7 @@
   document.addEventListener("tl-tts-finish", function () {
     var s = chainState()
     if (!s || !get(K_CHAIN)) return
-    if (s.k >= MAX) {
+    if (s.k >= getMax()) {
       setChain(null)
       return
     }
@@ -287,7 +338,7 @@
   window.__tlRandomPlay = {
     openPanel: openPanel,
     state: function () {
-      return { read: get(K_READ), chain: get(K_CHAIN), run: chainState(), max: MAX }
+      return { read: get(K_READ), chain: get(K_CHAIN), run: chainState(), max: getMax() }
     },
   }
   addStyle()
