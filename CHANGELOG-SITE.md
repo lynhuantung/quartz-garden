@@ -8,6 +8,10 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.22-5 · 22/11/2026
+- Điện thoại: nút Ngẫu nhiên đặt cao hơn khoảng 3 cm cho dễ bấm (vẫn kéo lên xuống được; vị trí đã kéo trước đây được đặt lại).
+- Nút "Nghe" chuyển sang bên phải, dễ bấm bằng ngón cái tay phải.
+
 ## 2026.11.22-4 · 22/11/2026
 - Chế độ "Thẻ giấy": không hiện dòng gợi ý "vì sao chọn ghi chú này" sau khi bấm Ngẫu nhiên, để đọc không bị xao nhãng. Dạng bình thường vẫn hiện như cũ.
 

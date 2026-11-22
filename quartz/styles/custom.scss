@@ -960,10 +960,10 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
     color: #ef4444;
   }
 
-  // Điện thoại: tab áp mép phải, ngang tầm ngón cái tay phải (mặc định 60vh - 240px, tức cao hơn ~4 cm trên A23; kéo lên/xuống được,
+  // Điện thoại: tab áp mép phải, ngang tầm ngón cái tay phải (mặc định 60vh - 180px: 2026-11-22 người dùng đã kéo về ~60vh thấy khó bấm, muốn cao hơn 3 cm ≈ 180px trên A23; kéo lên/xuống được,
   // vị trí lưu ở --tl-fab-top). Chỉ lấn khoảng 30px vào mép phải nên ít che chữ.
   @media all and not ($desktop) {
-    top: var(--tl-fab-top, calc(60vh - 240px));
+    top: var(--tl-fab-top, calc(60vh - 180px));
     bottom: auto;
     right: 0;
     width: 46px;
@@ -1258,7 +1258,7 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
   }
   @media all and not ($desktop) {
     right: 6px;
-    top: calc(var(--tl-fab-top, calc(60vh - 240px)) - 40px);
+    top: calc(var(--tl-fab-top, calc(60vh - 180px)) - 40px);
     bottom: auto;
   }
 }
@@ -1410,6 +1410,13 @@ footer { margin-top: 3rem; font-size: 0.85rem; color: var(--gray); opacity: 0.9;
 /* ---------- Nút "Nghe" đọc ghi chú (quartz/static/read-aloud.js) ---------- */
 .tl-tts-row {
   margin: -0.6rem 0 1rem;
+  // Nút "Nghe" nằm bên phải cho dễ bấm bằng ngón cái tay phải (2026-11-22)
+  display: flex;
+  justify-content: flex-end;
+}
+@media all and not ($desktop) {
+  // chừa chỗ cho tab Ngẫu nhiên áp mép phải (lấn ~32px) để hai nút không chồng nhau
+  .tl-tts-row { padding-right: 38px; }
 }
 .tl-tts-btn {
   display: inline-flex;
