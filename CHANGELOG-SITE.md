@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.22-3 · 22/11/2026
+- Điện thoại: tiêu đề ghi chú nhỏ lại vừa phải (trước to gần gấp 3 chữ nội dung), màn hình đầu thấy được nhiều nội dung hơn.
+
 ## 2026.11.22-2 · 22/11/2026
 - Thêm chế độ "Thẻ giấy": bấm nút hình thẻ cạnh nút sáng/tối, ghi chú chỉ còn tiêu đề kèm mã và nội dung như thẻ Zettelkasten giấy (ẩn Liên kết, Liên kết ngược, Sơ đồ, Properties). Nút Ngẫu nhiên vẫn dùng được. Bấm lại để về dạng bình thường; máy nhớ lựa chọn.
 

@@ -36,7 +36,8 @@ body {
     box-sizing: border-box;
   }
   .center { padding-left: 0; padding-right: 0; }
-  .article-title { font-size: 1.75rem; word-break: break-word; }
+  // .center .article-title: đủ mạnh để thắng quy tắc chung 2.6rem phía dưới (trước đây bị đè, tiêu đề 41.6px trên điện thoại)
+  .center .article-title { font-size: 1.45rem; line-height: 1.25; margin: 0.4rem 0 0.8rem; word-break: break-word; }
   .left.sidebar {
     gap: 0.4rem !important;
     padding: 0.55rem 0.25rem !important;
