@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.22-2 · 22/11/2026
+- Thêm chế độ "Thẻ giấy": bấm nút hình thẻ cạnh nút sáng/tối, ghi chú chỉ còn tiêu đề kèm mã và nội dung như thẻ Zettelkasten giấy (ẩn Liên kết, Liên kết ngược, Sơ đồ, Properties). Nút Ngẫu nhiên vẫn dùng được. Bấm lại để về dạng bình thường; máy nhớ lựa chọn.
+
 ## 2026.11.22-1 · 22/11/2026
 - Sách "Hướng dẫn triển khai Lean Six Sigma": nút "Nghe" đọc bằng giọng Hoài My tự nhiên ghi sẵn, nghe giống nhau trên mọi máy, kể cả điện thoại. Nút giọng hiện "Tự nhiên".
 
