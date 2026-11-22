@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.22-4 · 22/11/2026
+- Chế độ "Thẻ giấy": không hiện dòng gợi ý "vì sao chọn ghi chú này" sau khi bấm Ngẫu nhiên, để đọc không bị xao nhãng. Dạng bình thường vẫn hiện như cũ.
+
 ## 2026.11.22-3 · 22/11/2026
 - Điện thoại: tiêu đề ghi chú nhỏ lại vừa phải (trước to gần gấp 3 chữ nội dung), màn hình đầu thấy được nhiều nội dung hơn.
 

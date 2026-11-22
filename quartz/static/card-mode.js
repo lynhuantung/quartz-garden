@@ -4,6 +4,7 @@
 //   - Nút bật/tắt trên thanh công cụ (cạnh nút sáng/tối), nhớ lựa chọn bằng localStorage.
 //   - Khi bật: tiêu đề (đã có mã thẻ dạng 24/1a do search-plus.js gắn) + nội dung; ẩn mục "Liên kết…",
 //     Liên kết ngược, Sơ đồ, Properties, ngày/phút đọc, breadcrumb, cây thư mục, chân trang.
+//   - Ẩn luôn dòng gợi ý "vì sao chọn" 15 giây sau khi bấm Ngẫu nhiên (#tl-why / .tl-why-inline của search-plus.js).
 //   - Liên kết nằm trong câu chữ của nội dung vẫn giữ (là một phần của thẻ).
 // Chạy lại ở mỗi sự kiện "nav" của Quartz SPA (trang mới thay DOM nên phải gắn lại nút và mã).
 ;(function () {
@@ -51,7 +52,8 @@
       // ẩn mọi thứ ngoài tiêu đề và nội dung
       ON + ".sidebar.right," + ON + ".breadcrumb-container," + ON + ".note-properties," + ON + ".content-meta," +
       ON + ".center>hr," + ON + ".page-footer," + ON + "footer," + ON + ".explorer," +
-      ON + ".tl-card-hide," + ON + "article details.tl-fold{display:none!important}" +
+      ON + ".tl-card-hide," + ON + "article details.tl-fold," +
+      ON + "#tl-why," + ON + ".tl-why," + ON + ".tl-why-inline{display:none!important}" +
       // khung thẻ: viền giấy, vạch đỏ dưới tiêu đề như thẻ index
       ON + ".center{border:1px solid var(--lightgray);border-radius:6px;padding:1.25rem 1.5rem 1.5rem;" +
       "margin-top:1.25rem;margin-bottom:2rem;box-shadow:0 1px 4px rgba(0,0,0,.06);height:fit-content}" +
