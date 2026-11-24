@@ -20,7 +20,17 @@
       return false
     }
   }
+  // Điện thoại: menu "Nội dung" (explorer) đang mở thì Quartz gắn class mobile-no-scroll khóa cuộn trang.
+  // Thẻ giấy ẩn explorer và nút mở/đóng nó, nên phải đóng menu trước, không thì trang kẹt, không cuộn được.
+  function closeMobileExplorer() {
+    var html = document.documentElement
+    if (!html.classList.contains("mobile-no-scroll")) return
+    var t = document.querySelector("button.mobile-explorer")
+    if (t) t.click()
+    html.classList.remove("mobile-no-scroll")
+  }
   function setOn(v) {
+    if (v) closeMobileExplorer()
     try {
       localStorage.setItem(KEY, v ? "on" : "off")
     } catch (e) {}
@@ -108,6 +118,7 @@
 
   function apply() {
     addStyle()
+    if (isOn()) closeMobileExplorer()
     document.documentElement.setAttribute(ATTR, isOn() ? "on" : "off")
     addButton()
     markLinks()

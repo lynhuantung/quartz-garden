@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.24-1 · 24/11/2026
+- Điện thoại: bật "Thẻ giấy" khi menu Nội dung đang mở không còn làm trang bị kẹt, không cuộn được; menu tự đóng trước khi chuyển sang thẻ giấy.
+
 ## 2026.11.22-7 · 22/11/2026
 - Bảng tùy chọn nút Ngẫu nhiên: chỉnh được số ghi chú tự chuyển tối đa (mặc định 20, ví dụ 40; từ 1 đến 200) bằng nút −/+ hoặc gõ số; máy nhớ con số này.
 
