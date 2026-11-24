@@ -8,6 +8,9 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.24-2 · 24/11/2026
+- Chế độ "Thẻ giấy": bấm vào mã thẻ (ví dụ 38/13c) lại hiện tên nhánh và tên nhóm như ở dạng bình thường; chỉ dòng gợi ý "vì sao chọn" sau Ngẫu nhiên vẫn được ẩn.
+
 ## 2026.11.24-1 · 24/11/2026
 - Điện thoại: bật "Thẻ giấy" khi menu Nội dung đang mở không còn làm trang bị kẹt, không cuộn được; menu tự đóng trước khi chuyển sang thẻ giấy.
 

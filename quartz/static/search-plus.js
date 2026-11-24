@@ -223,11 +223,13 @@
     return lines.join("\n")
   }
 
+  // Bong bóng tên nhóm khi bấm mã Zettel. id riêng (không dùng "tl-why" của gợi ý "vì sao chọn")
+  // để chế độ Thẻ giấy ẩn gợi ý kia mà vẫn hiện được bong bóng này.
   function showTip(text) {
-    var old = document.getElementById("tl-why")
+    var old = document.getElementById("tl-code-tip")
     if (old) old.remove()
     var n = el("div", "tl-why", text)
-    n.id = "tl-why"
+    n.id = "tl-code-tip"
     n.setAttribute("role", "status")
     document.body.appendChild(n)
     setTimeout(function () {
