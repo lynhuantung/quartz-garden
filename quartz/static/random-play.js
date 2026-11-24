@@ -9,6 +9,8 @@
 //     lưu localStorage tl-auto-chain-max vì chỉ là con số, không tự bật gì).
 //   - Dừng chuỗi: mở ghi chú khác bằng liên kết/tìm kiếm, hoặc đóng thanh đọc. Tạm dừng thì chuỗi chờ đến khi đọc hết.
 //   - Số lần đã tự bấm hiện nhỏ trên nút Ngẫu nhiên (vd 3/20) trong lúc chuỗi đang chạy.
+//   - Giữ màn hình sáng (Wake Lock) trong lúc chuỗi chạy hoặc đang đọc, tối đa N phút (localStorage tl-keep-awake-min,
+//     mặc định 60, 0 = không giữ). Chuỗi dừng vì đủ số ghi chú thì nhả luôn.
 ;(function () {
   if (window.__tlRandomPlay) return
   window.__tlRandomPlay = true
@@ -28,6 +30,27 @@
     if (n > MAX_LIMIT) n = MAX_LIMIT
     try {
       localStorage.setItem(K_MAX, String(n))
+    } catch (e) {}
+    return n
+  }
+  // localStorage: số phút tối đa giữ màn hình sáng trong lúc tự đọc/tự chuyển (0 = không giữ). Người dùng 2026-11-24.
+  var K_AWAKE = "tl-keep-awake-min"
+  var AWAKE_DEFAULT = 60
+  var AWAKE_LIMIT = 240
+  function getAwakeMin() {
+    var v = null
+    try {
+      v = localStorage.getItem(K_AWAKE)
+    } catch (e) {}
+    var n = parseInt(v, 10)
+    return v !== null && n >= 0 && n <= AWAKE_LIMIT ? n : AWAKE_DEFAULT
+  }
+  function setAwakeMin(n) {
+    n = Math.round(+n)
+    if (!(n >= 0)) n = AWAKE_DEFAULT
+    if (n > AWAKE_LIMIT) n = AWAKE_LIMIT
+    try {
+      localStorage.setItem(K_AWAKE, String(n))
     } catch (e) {}
     return n
   }
@@ -98,6 +121,10 @@
       ".tl-rp-max input::-webkit-inner-spin-button,.tl-rp-max input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}" +
       ".tl-rp-step{width:2.1rem;height:2.1rem;border:1px solid var(--lightgray);border-radius:8px;background:var(--light);" +
       "color:var(--dark);font-size:1.1rem;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+      ".tl-rp-awake{border-top:1px solid var(--lightgray);padding-top:.55rem}" +
+      ".tl-rp-awake-t small{display:block;color:var(--gray);font-size:.8rem;margin-top:.15rem}" +
+      ".tl-rp-awake .tl-rp-max{padding-left:0;padding-top:.45rem}" +
+      ".tl-rp-warn{color:#b45309;font-size:.8rem;padding-bottom:.3rem}" +
       ".tl-rp-foot{margin-top:.4rem;color:var(--gray);font-size:.78rem}"
     document.head.appendChild(st)
   }
@@ -125,7 +152,18 @@
       '<button type="button" class="tl-rp-step" data-d="-10" aria-label="Bớt 10">−</button>' +
       '<input type="number" id="tl-rp-max" min="1" max="' + MAX_LIMIT + '" step="1" inputmode="numeric">' +
       '<button type="button" class="tl-rp-step" data-d="10" aria-label="Thêm 10">+</button></div>' +
-      '<div class="tl-rp-foot">Giữ nút Ngẫu nhiên để mở lại bảng này. Đóng trình duyệt thì hai tùy chọn tự tắt; số ghi chú tối đa vẫn được giữ.</div>'
+      '<div class="tl-rp-awake"><div class="tl-rp-awake-t">Giữ màn hình sáng khi đang đọc' +
+      "<small>Màn hình không tự tắt trong lúc đọc và tự chuyển, tối đa số phút dưới đây (0 là không giữ). " +
+      "Chuỗi dừng thì màn hình tắt như bình thường.</small></div>" +
+      '<div class="tl-rp-max"><label for="tl-rp-awake">Số phút tối đa</label>' +
+      '<button type="button" class="tl-rp-step" data-a="-15" aria-label="Bớt 15 phút">−</button>' +
+      '<input type="number" id="tl-rp-awake" min="0" max="' + AWAKE_LIMIT + '" step="1" inputmode="numeric">' +
+      '<button type="button" class="tl-rp-step" data-a="15" aria-label="Thêm 15 phút">+</button></div>' +
+      (wakeSupported()
+        ? ""
+        : '<div class="tl-rp-warn">Trình duyệt này chưa hỗ trợ giữ màn hình sáng. Hãy tăng thời gian tắt màn hình trong Cài đặt của máy.</div>') +
+      "</div>" +
+      '<div class="tl-rp-foot">Giữ nút Ngẫu nhiên để mở lại bảng này. Đóng trình duyệt thì hai tùy chọn tự tắt; số ghi chú và số phút vẫn được giữ.</div>'
     document.body.appendChild(p)
     var cr = p.querySelector("#tl-rp-read")
     var cc = p.querySelector("#tl-rp-chain")
@@ -144,7 +182,28 @@
         cm.blur()
       }
     })
-    p.querySelectorAll(".tl-rp-step").forEach(function (bt) {
+    var ca = p.querySelector("#tl-rp-awake")
+    ca.value = getAwakeMin()
+    var saveAwake = function () {
+      ca.value = setAwakeMin(ca.value)
+      evalWake()
+    }
+    ca.addEventListener("change", saveAwake)
+    ca.addEventListener("blur", saveAwake)
+    ca.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        saveAwake()
+        ca.blur()
+      }
+    })
+    p.querySelectorAll(".tl-rp-step[data-a]").forEach(function (bt) {
+      bt.addEventListener("click", function () {
+        var v = (parseInt(ca.value, 10) || 0) + +bt.dataset.a
+        ca.value = setAwakeMin(Math.max(0, v))
+        evalWake()
+      })
+    })
+    p.querySelectorAll(".tl-rp-step[data-d]").forEach(function (bt) {
       bt.addEventListener("click", function () {
         var v = (parseInt(cm.value, 10) || getMax()) + +bt.dataset.d
         cm.value = setMax(Math.max(1, v))
@@ -335,10 +394,93 @@
     true,
   )
 
+  // ---------- giữ màn hình sáng (Screen Wake Lock) ----------
+  // Người dùng 2026-11-24: "mới đọc 3 ghi chú là tự tắt màn hình điện thoại dẫn đến không đọc tiếp".
+  // Màn hình tắt thì trình duyệt treo trang, giọng đọc dừng. Trong lúc chuỗi tự chuyển chạy hoặc đang đọc,
+  // xin khóa "giữ sáng"; tự nhả khi chuỗi dừng (đủ số ghi chú), hết số phút cấu hình, hoặc đọc xong.
+  function awakeOn() {
+    if (getAwakeMin() <= 0) return false
+    if (chainState() && get(K_CHAIN)) return true
+    var ra = window.__tlReadAloud
+    try {
+      return !!(ra && ra.state().playing)
+    } catch (e) {
+      return false
+    }
+  }
+  var wakeLock = null
+  var wakeSince = 0 // mốc bắt đầu giữ sáng của đợt hiện tại
+  var wakeBusy = false
+  function wakeSupported() {
+    return !!(navigator.wakeLock && window.isSecureContext)
+  }
+  function releaseWake() {
+    if (wakeLock) {
+      try {
+        wakeLock.release()
+      } catch (e) {}
+    }
+    wakeLock = null
+  }
+  function evalWake() {
+    if (!wakeSupported()) return
+    if (!awakeOn()) {
+      wakeSince = 0
+      releaseWake()
+      return
+    }
+    if (!wakeSince) wakeSince = Date.now()
+    if (Date.now() - wakeSince >= getAwakeMin() * 60000) {
+      releaseWake() // hết số phút: để máy tự tắt màn hình như bình thường
+      return
+    }
+    if (wakeLock || wakeBusy || document.visibilityState !== "visible") return
+    wakeBusy = true
+    navigator.wakeLock
+      .request("screen")
+      .then(function (l) {
+        wakeLock = l
+        l.addEventListener("release", function () {
+          if (wakeLock === l) wakeLock = null
+        })
+      })
+      .catch(function () {})
+      .then(function () {
+        wakeBusy = false
+      })
+  }
+  setInterval(evalWake, 5000)
+  document.addEventListener("visibilitychange", evalWake) // màn hình bật lại / quay lại tab: xin lại khóa
+  document.addEventListener("tl-tts-finish", function () {
+    setTimeout(evalWake, 50)
+  })
+  document.addEventListener("nav", function () {
+    setTimeout(evalWake, 1500)
+  })
+  document.addEventListener(
+    "click",
+    function (e) {
+      var t = e.target.closest && e.target.closest("#tl-random-note-btn, #tl-tts-btn, .tl-tts-bar")
+      if (!t) return
+      // bấm tay Ngẫu nhiên: tính lại số phút từ đầu
+      if (!autoClicking && t.id === "tl-random-note-btn") wakeSince = 0
+      setTimeout(evalWake, 300)
+    },
+    false,
+  )
+
   window.__tlRandomPlay = {
     openPanel: openPanel,
     state: function () {
-      return { read: get(K_READ), chain: get(K_CHAIN), run: chainState(), max: getMax() }
+      return {
+        read: get(K_READ),
+        chain: get(K_CHAIN),
+        run: chainState(),
+        max: getMax(),
+        awakeMin: getAwakeMin(),
+        awake: !!wakeLock,
+        wakeSupported: wakeSupported(),
+      }
     },
   }
   addStyle()

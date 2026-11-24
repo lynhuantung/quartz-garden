@@ -8,6 +8,10 @@ Quy ước (đọc bởi scripts/sync-vault.mjs, hiện ở đầu trang Nhật 
 - Thay đổi chỉ ở ghi chú (vault) KHÔNG ghi ở đây; phần đó đã tự có trong Nhật ký phát hành.
 -->
 
+## 2026.11.24-3 · 24/11/2026
+- Tự đọc và tự chuyển ghi chú ngẫu nhiên: màn hình điện thoại không còn tự tắt giữa chừng làm dừng đọc; máy giữ màn hình sáng đến khi đọc đủ số ghi chú.
+- Bảng tùy chọn (giữ lâu nút Ngẫu nhiên) có thêm "Số phút tối đa" giữ màn hình sáng (mặc định 60 phút, 0 là không giữ).
+
 ## 2026.11.24-2 · 24/11/2026
 - Chế độ "Thẻ giấy": bấm vào mã thẻ (ví dụ 38/13c) lại hiện tên nhánh và tên nhóm như ở dạng bình thường; chỉ dòng gợi ý "vì sao chọn" sau Ngẫu nhiên vẫn được ẩn.
 
